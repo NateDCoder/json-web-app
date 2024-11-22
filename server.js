@@ -4,25 +4,42 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
-app.use(cors())
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON and serve static files
 app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(express.json())
+app.use(express.json());
 
-// Data storage
-const dataPath = './data/Match Info.json';
+// Paths for the main and copy data
+const data1Path = './data/Match Info.json';
+const data2Path = './data/Elo Rating Over Time.json';
+const data1CopyPath = './data copy/Match Info.json';
+const data2CopyPath = './data copy/Elo Rating Over Time.json';
 
-// Helper to read/write JSON file
-const readData = () => JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-const writeData = (data) => fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+// Helper functions to read/write JSON files
+const readJson = (path) => JSON.parse(fs.readFileSync(path, 'utf-8'));
+const writeJson = (path, data) => fs.writeFileSync(path, JSON.stringify(data, null, 2));
 
-// GET endpoint to fetch data
-app.get('/api/data', (req, res) => {
-    const data = readData();
-    res.json(data);
+// GET endpoint for data1
+app.get('/api/data1', (req, res) => {
+    try {
+        const data = readJson(data1Path);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error reading data1' });
+    }
+});
+
+// GET endpoint for data2
+app.get('/api/data2', (req, res) => {
+    try {
+        const data = readJson(data2Path);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error reading data2' });
+    }
 });
 
 // POST endpoint to add data to data1 and update data2
@@ -35,13 +52,32 @@ app.post('/api/data', (req, res) => {
 
     console.log(newData); // Logs the newData for debugging
 
-    const data = readData();
-    data.push(newData); // Push new data into the existing data array
+    try {
+        const data = readJson(data1Path);
+        data.push(newData); // Push new data into the existing data array
 
-    writeData(data); // Save the updated data
-    updateEloRatingsOverTime(data);
+        writeJson(data1Path, data); // Save the updated data
+        updateEloRatingsOverTime(data);
 
-    res.json({ message: 'Data updated successfully', data });
+        res.json({ message: 'Data updated successfully', data });
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating data' });
+    }
+});
+
+// POST endpoint to reset data
+app.post('/api/reset', (req, res) => {
+    try {
+        const data1Copy = readJson(data1CopyPath);
+        const data2Copy = readJson(data2CopyPath);
+
+        writeJson(data1Path, data1Copy);
+        writeJson(data2Path, data2Copy);
+
+        res.json({ message: 'Data reset successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error resetting data' });
+    }
 });
 
 // Start server
@@ -102,5 +138,5 @@ async function updateEloRatingsOverTime(data) {
         eloRatingsOverTime[blueTeam[0]].push(Math.floor(eloRatings[blueTeam[0]]))
         eloRatingsOverTime[blueTeam[1]].push(Math.floor(eloRatings[blueTeam[1]]))
     }
-    fs.writeFileSync('./data/Elo Rating Over Time.json', JSON.stringify(eloRatingsOverTime, null, 2))
+    writeData2(eloRatingsOverTime)
 }
