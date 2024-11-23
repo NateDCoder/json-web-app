@@ -138,5 +138,5 @@ async function updateEloRatingsOverTime(data) {
         eloRatingsOverTime[blueTeam[0]].push(Math.floor(eloRatings[blueTeam[0]]))
         eloRatingsOverTime[blueTeam[1]].push(Math.floor(eloRatings[blueTeam[1]]))
     }
-    writeData2(eloRatingsOverTime)
+    writeJson(data2Path, eloRatingsOverTime)
 }
