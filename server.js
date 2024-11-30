@@ -15,7 +15,7 @@ app.use(express.json());
 // Paths for the main and copy data
 const data1Path = './data/Match Info.json';
 const data2Path = './data/Elo Rating Over Time.json';
-const teamListInfoPath = './data/Elo Rating Over Time.json';
+const teamListInfoPath = './data/All Team Data.json';
 const data1CopyPath = './data copy/Match Info.json';
 const data2CopyPath = './data copy/Elo Rating Over Time.json';
 
