@@ -15,6 +15,7 @@ app.use(express.json());
 // Paths for the main and copy data
 const data1Path = './data/Match Info.json';
 const data2Path = './data/Elo Rating Over Time.json';
+const teamListInfoPath = './data/Elo Rating Over Time.json';
 const data1CopyPath = './data copy/Match Info.json';
 const data2CopyPath = './data copy/Elo Rating Over Time.json';
 
@@ -26,6 +27,16 @@ const writeJson = (path, data) => fs.writeFileSync(path, JSON.stringify(data, nu
 app.get('/api/data1', (req, res) => {
     try {
         const data = readJson(data1Path);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error reading data1' });
+    }
+});
+
+// GET endpoint for data1
+app.get('/api/Team_List', (req, res) => {
+    try {
+        const data = readJson(teamListInfoPath);
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: 'Error reading data1' });
