@@ -359,12 +359,31 @@ function updateTeamData() {
         allTeamData.push({ "Number": teamNumber, "Name": numbterToName[teamNumber], "Unitless EPA": untilessEPA, "EPA": teamData[teamNumber]["EPA"], "Auto EPA": teamData[teamNumber]["Auto EPA"], "TeleOp EPA": teamData[teamNumber]["TeleOp EPA"], "Endgame EPA": teamData[teamNumber]["Endgame EPA"] })
     }
     allTeamData.sort((a, b) => b["EPA"] - a["EPA"]);
-    let csvContent = "Rank,Name,Number,Unitless EPA,EPA,Auto EPA,TeleOp EPA,Endgame EPA\n";
 
     // Add ranked rows
     allTeamData.forEach((event, index) => {
         event["EPA Rank"] = index + 1
-        csvContent += `${index + 1},${event.Number},${numbterToName[event.Number]},${event["Unitless EPA"]},${event["EPA"]},${event["Auto EPA"]},${event["TeleOp EPA"]},${event["Endgame EPA"]}\n`;
+    });
+
+    allTeamData.sort((a, b) => b["Auto EPA"] - a["Auto EPA"]);
+    
+    // Add ranked rows
+    allTeamData.forEach((event, index) => {
+        event["Auto EPA Rank"] = index + 1
+    });
+
+    allTeamData.sort((a, b) => b["TeleOp EPA"] - a["TeleOp EPA"]);
+    
+    // Add ranked rows
+    allTeamData.forEach((event, index) => {
+        event["TeleOp EPA Rank"] = index + 1
+    });
+
+    allTeamData.sort((a, b) => b["Endgame EPA"] - a["Endgame EPA"]);
+    
+    // Add ranked rows
+    allTeamData.forEach((event, index) => {
+        event["Endgame EPA Rank"] = index + 1
     });
 
     fs.writeFileSync("./data/All Team Data.json", JSON.stringify(allTeamData, null, 2))
