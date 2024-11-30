@@ -358,12 +358,6 @@ function updateTeamData() {
         let untilessEPA = 1500 + 250 * (teamData[teamNumber]["EPA"] - averageEPA) / standardDevation
         allTeamData.push({ "Number": teamNumber, "Name": numbterToName[teamNumber], "Unitless EPA": untilessEPA, "EPA": teamData[teamNumber]["EPA"], "Auto EPA": teamData[teamNumber]["Auto EPA"], "TeleOp EPA": teamData[teamNumber]["TeleOp EPA"], "Endgame EPA": teamData[teamNumber]["Endgame EPA"] })
     }
-    allTeamData.sort((a, b) => b["EPA"] - a["EPA"]);
-
-    // Add ranked rows
-    allTeamData.forEach((event, index) => {
-        event["EPA Rank"] = index + 1
-    });
 
     allTeamData.sort((a, b) => b["Auto EPA"] - a["Auto EPA"]);
     
@@ -384,6 +378,13 @@ function updateTeamData() {
     // Add ranked rows
     allTeamData.forEach((event, index) => {
         event["Endgame EPA Rank"] = index + 1
+    });
+
+    allTeamData.sort((a, b) => b["EPA"] - a["EPA"]);
+
+    // Add ranked rows
+    allTeamData.forEach((event, index) => {
+        event["EPA Rank"] = index + 1
     });
 
     fs.writeFileSync("./data/All Team Data.json", JSON.stringify(allTeamData, null, 2))
