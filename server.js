@@ -185,7 +185,6 @@ async function updateEloRatingsOverTime(data) {
     writeJson(data2Path, eloRatingsOverTime)
 }
 async function updateAllEventData(token) {
-    return
     const eventCodes = JSON.parse(fs.readFileSync("./data/Event Codes.json", "utf8"));
     // Define the API URL you want to call
     for (let event_code of eventCodes) {
