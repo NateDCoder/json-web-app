@@ -115,7 +115,7 @@ app.post('/api/reset', (req, res) => {
 });
 const eventCodesGlobal = JSON.parse(fs.readFileSync("./data/Event Codes.json", "utf8"));
 for (let eventCode of eventCodesGlobal) {
-    app.get('/api/'+eventCode, (req, res) => {
+    app.get('/api/' + eventCode, (req, res) => {
         try {
             const data = readJson("./data/Event Details/" + eventCode + ".json");
             res.json(data);
@@ -286,7 +286,7 @@ async function updateTeamData(token) {
             "Played Matches": 0
         };
     });
-
+    var allTeamData = updateEloAndEPARank(allTeams, teamData, numberToName);
     for (let eventCode of eventCodes) {
         let matches = JSON.parse(fs.readFileSync(`./data/Event Matches/${eventCode}.json`, "utf8"));
         let matchesTeams = JSON.parse(fs.readFileSync(`./data/Event Matches/${eventCode}_Team.json`, "utf8"));
@@ -316,8 +316,8 @@ async function updateTeamData(token) {
         }
 
         if (eventData["hasTeamList"]) {
-            console.log(eventCode)
-            eventData["preEloTeamList"] = getTeamData({...teamData}, teamNumbers, numberToName, [...ranks.rankings])
+
+            eventData["preEloTeamList"] = getTeamData([...allTeamData], teamNumbers, [...ranks.rankings])
         }
 
         eventData["teams"] = teamNumbers
@@ -421,13 +421,20 @@ async function updateTeamData(token) {
             teamData[red1]["Endgame EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
             teamData[red2]["Endgame EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
         }
+        allTeamData = updateEloAndEPARank(allTeams, { ...teamData }, numberToName);
+
         if (eventData["hasTeamList"]) {
-            eventData["afterEloTeamList"] = getTeamData({...teamData}, teamNumbers, numberToName, [...ranks.rankings])
+            eventData["afterEloTeamList"] = getTeamData([ ...allTeamData ], teamNumbers, [...ranks.rankings])
         }
         eventData["rankings"] = ranks.rankings;
 
         fs.writeFileSync("./data/Event Details/" + eventCode + ".json", JSON.stringify(eventData, null, 2))
     }
+
+    fs.writeFileSync(teamListInfoPath, JSON.stringify(allTeamData, null, 2))
+}
+function updateEloAndEPARank(allTeams, _teamData, numberToName) {
+    var teamData = { ..._teamData }
     let allEPA = [];
     for (let teamNumber of allTeams) {
         allEPA.push(teamData[teamNumber]["EPA"])
@@ -469,8 +476,7 @@ async function updateTeamData(token) {
     allTeamData.forEach((event, index) => {
         event["EPA Rank"] = index + 1
     });
-
-    fs.writeFileSync(teamListInfoPath, JSON.stringify(allTeamData, null, 2))
+    return allTeamData;
 }
 function getK(gamesPlayed, matchLevel) {
     if (matchLevel == "PLAYOFF") return 0;
@@ -559,52 +565,31 @@ async function getRanks(event_code, token) {
         });
     return ranks;
 }
-function getTeamData(teamData, teamNumbers, numberToName, ranks) {
+function getTeamData(allTeamData, teamNumbers, ranks) {
+    // console.log(allTeamData)
     let teamDataArray = [];
     var numberToRank = {};
+    var numberToData = {}
     if (ranks.length > 0) {
         ranks.forEach(item => {
             numberToRank[item.teamNumber] = item.rank;
         });
     }
+    allTeamData.forEach(item => {
+        numberToData[item.Number] = item;
+    });
     for (let teamNumber of teamNumbers) {
-        if (!teamData[teamNumber]) {
+        if (!numberToData[teamNumber]) {
             console.log(teamNumber)
         }
-        var teamData1 = {...teamData[teamNumber]}
-        teamData1["Number"] = teamNumber;
-        teamData1["Name"] = numberToName[teamNumber]
+        var teamData1 = { ...numberToData[teamNumber] }
         if (ranks.length > 0) {
             teamData1["Rank"] = numberToRank[teamNumber]
         }
         teamDataArray.push(teamData1)
     }
-    teamDataArray.sort((a, b) => b["Auto EPA"] - a["Auto EPA"]);
-
-    // Add ranked rows
-    teamDataArray.forEach((event, index) => {
-        event["Auto EPA Rank"] = index + 1
-    });
-
-    teamDataArray.sort((a, b) => b["TeleOp EPA"] - a["TeleOp EPA"]);
-
-    // Add ranked rows
-    teamDataArray.forEach((event, index) => {
-        event["TeleOp EPA Rank"] = index + 1
-    });
-
-    teamDataArray.sort((a, b) => b["Endgame EPA"] - a["Endgame EPA"]);
-
-    // Add ranked rows
-    teamDataArray.forEach((event, index) => {
-        event["Endgame EPA Rank"] = index + 1
-    });
 
     teamDataArray.sort((a, b) => b["EPA"] - a["EPA"]);
-    // Add ranked rows
-    teamDataArray.forEach((event, index) => {
-        event["EPA Rank"] = index + 1
-    });
 
     if (ranks.length > 0) {
         teamDataArray.sort((a, b) => a["Rank"] - b["Rank"]);
