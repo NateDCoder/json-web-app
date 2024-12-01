@@ -16,6 +16,7 @@ app.use(express.json());
 const data1Path = './data/Match Info.json';
 const data2Path = './data/Elo Rating Over Time.json';
 const teamListInfoPath = './data/All Team Data.json';
+const eventNamesPath = './data/EventCode To Name.json';
 const data1CopyPath = './data copy/Match Info.json';
 const data2CopyPath = './data copy/Elo Rating Over Time.json';
 
@@ -23,7 +24,6 @@ const data2CopyPath = './data copy/Elo Rating Over Time.json';
 const readJson = (path) => JSON.parse(fs.readFileSync(path, 'utf-8'));
 const writeJson = (path, data) => fs.writeFileSync(path, JSON.stringify(data, null, 2));
 
-// GET endpoint for data1
 app.get('/api/data1', (req, res) => {
     try {
         const data = readJson(data1Path);
@@ -33,13 +33,21 @@ app.get('/api/data1', (req, res) => {
     }
 });
 
-// GET endpoint for data1
 app.get('/api/Team_List', (req, res) => {
     try {
         const data = readJson(teamListInfoPath);
         res.json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Error reading data1' });
+        res.status(500).json({ error: 'Error reading Team List' });
+    }
+});
+
+app.get('/api/Event_Names', (req, res) => {
+    try {
+        const data = readJson(eventNamesPath);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error reading eventNamesPath' });
     }
 });
 
