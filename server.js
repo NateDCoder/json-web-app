@@ -177,9 +177,9 @@ async function updateAllEventData(token) {
     const eventCodes = JSON.parse(fs.readFileSync("./data/Event Codes.json", "utf8"));
     // Define the API URL you want to call
     for (let event_code of eventCodes) {
-        const apiUrl = "https://ftc-api.firstinspires.org/v2.0/2024/scores/" + event_code + "/qual"; // Replace with the actual endpoint
-        // Make the API request
-        await fetch(apiUrl, {
+        const apiUrlQuals = "https://ftc-api.firstinspires.org/v2.0/2024/scores/" + event_code + "/qual"; // Replace with the actual endpoint
+        var quals;
+        await fetch(apiUrlQuals, {
             method: "GET",
             headers: {
                 "Authorization": `Basic ${token}`,
@@ -194,11 +194,36 @@ async function updateAllEventData(token) {
                 return response.text(); // Get response as text
             })
             .then(data => {
-                fs.writeFileSync("./data/Event Matches/" + event_code + ".json", data)
+                quals = data
             })
             .catch(error => {
                 console.error("Error fetching the API:", error);
             });
+        const apiUrlElim = "https://ftc-api.firstinspires.org/v2.0/2024/scores/" + event_code + "/playoff"; // Replace with the actual endpoint
+        var elim;
+        await fetch(apiUrlElim, {
+            method: "GET",
+            headers: {
+                "Authorization": `Basic ${token}`,
+                "Content-Type": "application/json"
+            }
+        })
+            .then(response => {
+                console.log("Response Status:", response.status);  // Log the status code
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text(); // Get response as text
+            })
+            .then(data => {
+                elim = data
+            })
+            .catch(error => {
+                console.error("Error fetching the API:", error);
+            });
+        var data = JSON.parse(quals);
+        data.matchScores = data.matchScores.concat(JSON.parse(elim).matchScores)
+        fs.writeFileSync("./data/Event Matches/" + event_code + ".json", JSON.stringify(data, null, 2))
     }
     for (let event_code of eventCodes) {
         const apiUrl = "https://ftc-api.firstinspires.org/v2.0/2024/matches/" + event_code; // Replace with the actual endpoint
@@ -223,6 +248,7 @@ async function updateAllEventData(token) {
             .catch(error => {
                 console.error("Error fetching the API:", error);
             });
+
     }
 }
 function updateTeamData() {
@@ -253,6 +279,8 @@ function updateTeamData() {
     for (let eventCode of eventCodes) {
         let matches = JSON.parse(fs.readFileSync(`./data/Event Matches/${eventCode}.json`, "utf8"));
         let matchesTeams = JSON.parse(fs.readFileSync(`./data/Event Matches/${eventCode}_Team.json`, "utf8"));
+        var eventData = {}
+        console.log()
         for (let i = 0; i < matches.matchScores.length; i++) {
             let matchData = matches.matchScores[i].alliances;
             let blueScore = 0;
@@ -368,21 +396,21 @@ function updateTeamData() {
     }
 
     allTeamData.sort((a, b) => b["Auto EPA"] - a["Auto EPA"]);
-    
+
     // Add ranked rows
     allTeamData.forEach((event, index) => {
         event["Auto EPA Rank"] = index + 1
     });
 
     allTeamData.sort((a, b) => b["TeleOp EPA"] - a["TeleOp EPA"]);
-    
+
     // Add ranked rows
     allTeamData.forEach((event, index) => {
         event["TeleOp EPA Rank"] = index + 1
     });
 
     allTeamData.sort((a, b) => b["Endgame EPA"] - a["Endgame EPA"]);
-    
+
     // Add ranked rows
     allTeamData.forEach((event, index) => {
         event["Endgame EPA Rank"] = index + 1
@@ -394,8 +422,6 @@ function updateTeamData() {
     allTeamData.forEach((event, index) => {
         event["EPA Rank"] = index + 1
     });
-
-    fs.writeFileSync("./data/All Team Data.json", JSON.stringify(allTeamData, null, 2))
 }
 function getK(gamesPlayed) {
     if (gamesPlayed <= 6) {
