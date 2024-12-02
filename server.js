@@ -480,11 +480,11 @@ function updateEloAndEPARank(allTeams, _teamData, numberToName) {
 function getK(gamesPlayed, matchLevel) {
     if (matchLevel == "PLAYOFF") return 0;
     if (gamesPlayed <= 6) {
-        return 0.5;
+        return 0.33;
     } else if (gamesPlayed <= 12) {
-        return 0.5 - (1 / 30 * (gamesPlayed - 6))
+        return 0.33 - (13 / 600 * (gamesPlayed - 6))
     } else {
-        return 0.3
+        return 0.2
     }
 }
 
