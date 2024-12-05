@@ -321,8 +321,14 @@ async function updateTeamData(token) {
 
         eventData["teams"] = teamNumbers
         eventData["schedule"] = schedule.schedule
-        for (let i = 0; i < matches.matchScores.length; i++) {
-            let matchData = matches.matchScores[i].alliances;
+        eventData["Predictions"] = []
+        for (let i = 0; i < schedule.schedule.length; i++) {
+            let matchData = null;
+            try {
+                matchData = matches.matchScores[i].alliances;
+            } catch (error) {
+
+            }
             let blueScore = 0;
             let redScore = 0;
 
@@ -358,72 +364,86 @@ async function updateTeamData(token) {
                         break
                 }
             });
-
-            if (matchData[0].alliance == "Blue") {
-                blueScore = matchData[0].preFoulTotal;
-                redScore = matchData[1].preFoulTotal;
-
-                blueAuto = matchData[0].autoPoints;
-                redAuto = matchData[1].autoPoints;
-
-                blueTeleOp = matchData[0].teleopPoints - matchData[0].teleopAscentPoints - matchData[0].teleopParkPoints
-                redTeleOp = matchData[1].teleopPoints - matchData[1].teleopAscentPoints - matchData[1].teleopParkPoints
-
-                blueEndgame = matchData[0].teleopAscentPoints + matchData[0].teleopParkPoints
-                redEndgame = matchData[1].teleopAscentPoints + matchData[1].teleopParkPoints
-            } else {
-                console.log("Urm what the sigma")
+            let redPredictedScore = Math.round(teamData[red1]["EPA"] + teamData[red2]["EPA"])
+            let bluePredictedScore = Math.round(teamData[blue1]["EPA"] + teamData[blue2]["EPA"])
+            let predictedTeamWin = "Tie"
+            if (redPredictedScore > bluePredictedScore) {
+                predictedTeamWin = "Red"
+            } else if (redPredictedScore < bluePredictedScore){
+                predictedTeamWin = "Blue"
             }
+            let eloDifference = -Math.abs(Math.round(teamData[red1]["Unitless EPA"] + teamData[red2]["Unitless EPA"])-Math.round(teamData[blue1]["Unitless EPA"] + teamData[blue2]["Unitless EPA"]))
+            let winPercentage = 1 /(1+Math.pow(10, eloDifference/400))
+            let predictionData = {"Red Pred Score":redPredictedScore, "Blue Pred Score":bluePredictedScore, "Predicted Team Win":predictedTeamWin, "Win Percentage":winPercentage}
+            eventData["Predictions"].push(predictionData)
+            if (matchData) {
+                if (matchData[0].alliance == "Blue") {
+                    blueScore = matchData[0].preFoulTotal;
+                    redScore = matchData[1].preFoulTotal;
 
-            teamData[blue1]["Played Matches"]++;
-            teamData[blue2]["Played Matches"]++;
+                    blueAuto = matchData[0].autoPoints;
+                    redAuto = matchData[1].autoPoints;
 
-            teamData[red1]["Played Matches"]++;
-            teamData[red2]["Played Matches"]++;
+                    blueTeleOp = matchData[0].teleopPoints - matchData[0].teleopAscentPoints - matchData[0].teleopParkPoints
+                    redTeleOp = matchData[1].teleopPoints - matchData[1].teleopAscentPoints - matchData[1].teleopParkPoints
 
-            let bluePointDifference = blueScore - (teamData[blue1]["EPA"] + teamData[blue2]["EPA"])
-            let redPointDifference = redScore - (teamData[red1]["EPA"] + teamData[red2]["EPA"])
+                    blueEndgame = matchData[0].teleopAscentPoints + matchData[0].teleopParkPoints
+                    redEndgame = matchData[1].teleopAscentPoints + matchData[1].teleopParkPoints
+                } else {
+                    console.log("Urm what the sigma")
+                }
 
-            teamData[blue1]["EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * bluePointDifference;
-            teamData[blue2]["EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * bluePointDifference;
+                teamData[blue1]["Played Matches"]++;
+                teamData[blue2]["Played Matches"]++;
 
-            teamData[red1]["EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redPointDifference;
-            teamData[red2]["EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redPointDifference;
+                teamData[red1]["Played Matches"]++;
+                teamData[red2]["Played Matches"]++;
 
+                let bluePointDifference = blueScore - (teamData[blue1]["EPA"] + teamData[blue2]["EPA"])
+                let redPointDifference = redScore - (teamData[red1]["EPA"] + teamData[red2]["EPA"])
 
-            let blueAutoDifference = blueAuto - (teamData[blue1]["Auto EPA"] + teamData[blue2]["Auto EPA"])
-            let redAutoDifference = redAuto - (teamData[red1]["Auto EPA"] + teamData[red2]["Auto EPA"])
+                teamData[blue1]["EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * bluePointDifference;
+                teamData[blue2]["EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * bluePointDifference;
 
-            teamData[blue1]["Auto EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueAutoDifference;
-            teamData[blue2]["Auto EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueAutoDifference;
-
-            teamData[red1]["Auto EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redAutoDifference;
-            teamData[red2]["Auto EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redAutoDifference;
-
-
-            let blueTeleOpDifference = blueTeleOp - (teamData[blue1]["TeleOp EPA"] + teamData[blue2]["TeleOp EPA"])
-            let redTeleOpDifference = redTeleOp - (teamData[red1]["TeleOp EPA"] + teamData[red2]["TeleOp EPA"])
-
-            teamData[blue1]["TeleOp EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueTeleOpDifference;
-            teamData[blue2]["TeleOp EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueTeleOpDifference;
-
-            teamData[red1]["TeleOp EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redTeleOpDifference;
-            teamData[red2]["TeleOp EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redTeleOpDifference;
+                teamData[red1]["EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redPointDifference;
+                teamData[red2]["EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redPointDifference;
 
 
-            let blueEndgameDifference = blueEndgame - (teamData[blue1]["Endgame EPA"] + teamData[blue2]["Endgame EPA"])
-            let redEndgameDifference = redEndgame - (teamData[red1]["Endgame EPA"] + teamData[red2]["Endgame EPA"])
+                let blueAutoDifference = blueAuto - (teamData[blue1]["Auto EPA"] + teamData[blue2]["Auto EPA"])
+                let redAutoDifference = redAuto - (teamData[red1]["Auto EPA"] + teamData[red2]["Auto EPA"])
 
-            teamData[blue1]["Endgame EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueEndgameDifference;
-            teamData[blue2]["Endgame EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueEndgameDifference;
+                teamData[blue1]["Auto EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueAutoDifference;
+                teamData[blue2]["Auto EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueAutoDifference;
 
-            teamData[red1]["Endgame EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
-            teamData[red2]["Endgame EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
+                teamData[red1]["Auto EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redAutoDifference;
+                teamData[red2]["Auto EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redAutoDifference;
+
+
+                let blueTeleOpDifference = blueTeleOp - (teamData[blue1]["TeleOp EPA"] + teamData[blue2]["TeleOp EPA"])
+                let redTeleOpDifference = redTeleOp - (teamData[red1]["TeleOp EPA"] + teamData[red2]["TeleOp EPA"])
+
+                teamData[blue1]["TeleOp EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueTeleOpDifference;
+                teamData[blue2]["TeleOp EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueTeleOpDifference;
+
+                teamData[red1]["TeleOp EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redTeleOpDifference;
+                teamData[red2]["TeleOp EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redTeleOpDifference;
+
+
+                let blueEndgameDifference = blueEndgame - (teamData[blue1]["Endgame EPA"] + teamData[blue2]["Endgame EPA"])
+                let redEndgameDifference = redEndgame - (teamData[red1]["Endgame EPA"] + teamData[red2]["Endgame EPA"])
+
+                teamData[blue1]["Endgame EPA"] += getK(teamData[blue1]["Played Matches"], matches.matchScores[i].matchLevel) * blueEndgameDifference;
+                teamData[blue2]["Endgame EPA"] += getK(teamData[blue2]["Played Matches"], matches.matchScores[i].matchLevel) * blueEndgameDifference;
+
+                teamData[red1]["Endgame EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
+                teamData[red2]["Endgame EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
+                allTeamData = updateEloAndEPARank(allTeams, { ...teamData }, numberToName);
+            }
         }
-        allTeamData = updateEloAndEPARank(allTeams, { ...teamData }, numberToName);
+
 
         if (eventData["hasTeamList"]) {
-            eventData["afterEloTeamList"] = getTeamData([ ...allTeamData ], teamNumbers, [...ranks.rankings])
+            eventData["afterEloTeamList"] = getTeamData([...allTeamData], teamNumbers, [...ranks.rankings])
         }
         eventData["rankings"] = ranks.rankings;
 
@@ -445,6 +465,7 @@ function updateEloAndEPARank(allTeams, _teamData, numberToName) {
     let allTeamData = [];
     for (let teamNumber of allTeams) {
         let untilessEPA = 1500 + 250 * (teamData[teamNumber]["EPA"] - averageEPA) / standardDevation
+        _teamData[teamNumber]["Unitless EPA"] = untilessEPA
         allTeamData.push({ "Number": teamNumber, "Name": numberToName[teamNumber], "Unitless EPA": untilessEPA, "EPA": teamData[teamNumber]["EPA"], "Auto EPA": teamData[teamNumber]["Auto EPA"], "TeleOp EPA": teamData[teamNumber]["TeleOp EPA"], "Endgame EPA": teamData[teamNumber]["Endgame EPA"] })
     }
 
