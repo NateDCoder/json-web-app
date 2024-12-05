@@ -279,6 +279,7 @@ async function updateTeamData(token) {
         teamData[team] = {
             "Unitless EPA": 1500,
             "EPA": gameMean / 2,
+            "EPA Over Time":[],
             "Auto EPA": autoMean / 2,
             "TeleOp EPA": teleOpMean / 2,
             "Endgame EPA": endgameMean / 2,
@@ -438,6 +439,11 @@ async function updateTeamData(token) {
                 teamData[red1]["Endgame EPA"] += getK(teamData[red1]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
                 teamData[red2]["Endgame EPA"] += getK(teamData[red2]["Played Matches"], matches.matchScores[i].matchLevel) * redEndgameDifference;
                 allTeamData = updateEloAndEPARank(allTeams, { ...teamData }, numberToName);
+
+                teamData[red1]["EPA Over Time"].push(Math.floor(10*teamData[red1]["EPA"])/10)
+                teamData[red2]["EPA Over Time"].push(Math.floor(10*teamData[red2]["EPA"])/10)
+                teamData[blue1]["EPA Over Time"].push(Math.floor(10*teamData[blue1]["EPA"])/10)
+                teamData[blue2]["EPA Over Time"].push(Math.floor(10*teamData[blue2]["EPA"])/10)
             }
         }
 
@@ -466,7 +472,7 @@ function updateEloAndEPARank(allTeams, _teamData, numberToName) {
     for (let teamNumber of allTeams) {
         let untilessEPA = 1500 + 250 * (teamData[teamNumber]["EPA"] - averageEPA) / standardDevation
         _teamData[teamNumber]["Unitless EPA"] = untilessEPA
-        allTeamData.push({ "Number": teamNumber, "Name": numberToName[teamNumber], "Unitless EPA": untilessEPA, "EPA": teamData[teamNumber]["EPA"], "Auto EPA": teamData[teamNumber]["Auto EPA"], "TeleOp EPA": teamData[teamNumber]["TeleOp EPA"], "Endgame EPA": teamData[teamNumber]["Endgame EPA"] })
+        allTeamData.push({ "Number": teamNumber, "Name": numberToName[teamNumber], "Unitless EPA": untilessEPA, "EPA": teamData[teamNumber]["EPA"], "Auto EPA": teamData[teamNumber]["Auto EPA"], "TeleOp EPA": teamData[teamNumber]["TeleOp EPA"], "Endgame EPA": teamData[teamNumber]["Endgame EPA"],"EPA Over Time": teamData[teamNumber]["EPA Over Time"]})
     }
 
     allTeamData.sort((a, b) => b["Auto EPA"] - a["Auto EPA"]);
