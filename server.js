@@ -347,7 +347,8 @@ async function updateTeamData(token) {
 
             let red1 = "";
             let red2 = "";
-            var participants = matchesTeams.matches[i].teams
+            
+            var participants = schedule.schedule[i].teams
             participants.forEach(participant => {
                 const key = participant.station;
                 switch (key) {
