@@ -188,6 +188,7 @@ async function updateAllEventData(token) {
     const eventCodes = JSON.parse(fs.readFileSync("./data/Event Codes.json", "utf8"));
     // Define the API URL you want to call
     for (let event_code of eventCodes) {
+        if (event_code!="USMICMP2CURE") continue;
         const apiUrlQuals = "https://ftc-api.firstinspires.org/v2.0/2024/scores/" + event_code + "/qual"; // Replace with the actual endpoint
         var quals;
         await fetch(apiUrlQuals, {
@@ -237,6 +238,7 @@ async function updateAllEventData(token) {
         fs.writeFileSync("./data/Event Matches/" + event_code + ".json", JSON.stringify(data, null, 2))
     }
     for (let event_code of eventCodes) {
+        if (event_code!="USMICMP2CURE") continue;
         const apiUrl = "https://ftc-api.firstinspires.org/v2.0/2024/matches/" + event_code; // Replace with the actual endpoint
         // Make the API request
         await fetch(apiUrl, {

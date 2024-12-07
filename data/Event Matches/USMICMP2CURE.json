@@ -1,3 +1,76 @@
 {
-  "matchScores": []
+  "matchScores": [
+    {
+      "matchLevel": "QUALIFICATION",
+      "matchSeries": 0,
+      "matchNumber": 1,
+      "randomization": 0,
+      "alliances": [
+        {
+          "alliance": "Blue",
+          "team": 0,
+          "robot1Auto": "ASCENT",
+          "robot2Auto": "OBSERVATION_ZONE",
+          "autoSampleNet": 1,
+          "autoSampleLow": 0,
+          "autoSampleHigh": 3,
+          "autoSpecimenLow": 0,
+          "autoSpecimenHigh": 2,
+          "teleopSampleNet": 1,
+          "teleopSampleLow": 0,
+          "teleopSampleHigh": 10,
+          "teleopSpecimenLow": 0,
+          "teleopSpecimenHigh": 4,
+          "robot1Teleop": "ASCENT_2",
+          "robot2Teleop": "ASCENT_1",
+          "minorFouls": 0,
+          "majorFouls": 0,
+          "autoSamplePoints": 26,
+          "autoSpecimenPoints": 20,
+          "teleopSamplePoints": 82,
+          "teleopSpecimenPoints": 40,
+          "teleopParkPoints": 0,
+          "teleopAscentPoints": 18,
+          "autoPoints": 52,
+          "teleopPoints": 140,
+          "endGamePoints": 0,
+          "foulPointsCommitted": 0,
+          "preFoulTotal": 192,
+          "totalPoints": 192
+        },
+        {
+          "alliance": "Red",
+          "team": 0,
+          "robot1Auto": "NONE",
+          "robot2Auto": "NONE",
+          "autoSampleNet": 0,
+          "autoSampleLow": 0,
+          "autoSampleHigh": 0,
+          "autoSpecimenLow": 0,
+          "autoSpecimenHigh": 4,
+          "teleopSampleNet": 0,
+          "teleopSampleLow": 1,
+          "teleopSampleHigh": 10,
+          "teleopSpecimenLow": 0,
+          "teleopSpecimenHigh": 5,
+          "robot1Teleop": "ASCENT_2",
+          "robot2Teleop": "ASCENT_2",
+          "minorFouls": 0,
+          "majorFouls": 0,
+          "autoSamplePoints": 0,
+          "autoSpecimenPoints": 40,
+          "teleopSamplePoints": 84,
+          "teleopSpecimenPoints": 50,
+          "teleopParkPoints": 0,
+          "teleopAscentPoints": 30,
+          "autoPoints": 40,
+          "teleopPoints": 164,
+          "endGamePoints": 0,
+          "foulPointsCommitted": 0,
+          "preFoulTotal": 204,
+          "totalPoints": 204
+        }
+      ]
+    }
+  ]
 }
