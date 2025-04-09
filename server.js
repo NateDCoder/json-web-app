@@ -5,7 +5,7 @@ const cors = require('cors');
 const { pathToFileURL } = require('url');
 
 const app = express();
-app.use(cors());
+app.use(cors());    
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON and serve static files
