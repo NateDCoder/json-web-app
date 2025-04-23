@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { getStats, eloToEPA } from "./util.js";
+const token = btoa(`nathandgamer:B493F5FF-7FC9-43F8-9EB9-FE7E3042AC87`);
 
 const apiUrl = "https://ftc-api.firstinspires.org/v2.0/";
 const writeJson = (filePath, data) => {
@@ -17,7 +18,104 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await generateYearData(2019)
 // await calculateAverageAndSTD(2019, ["19MIQT10", "19MIQT11", "19MIQT12", "19MIQT8", "19MIQT9"]);
 // await createTeamData(2019);
-await createEventData(2019);
+// await createEventData(2019);
+// await createStateRanks(2019);
+
+async function getTeamEPARank(year, eventCode) {
+    const eventData = readJson(`${year}/events/${eventCode}/${eventCode}.json`);
+    const teams = eventData.teams;
+    console.log(teams);
+    const teamsData = getTeamData(year, teams);
+
+    const EPAs = [];
+
+    for (let team of teamsData) {
+        EPAs.push({ teamNumber: team.teamNumber, totalEPA: team.totalEPA });
+    }
+    EPAs.sort((a, b) => b.totalEPA - a.totalEPA);
+
+    const output = EPAs.map(
+        (obj, index) => `${index + 1}\t${obj.teamNumber}\t${obj.totalEPA}`
+    ).join("\n");
+
+    fs.writeFileSync("teams_ranks.txt", output);
+}
+
+async function createStateRanks(year) {
+    const data = readJson(`${year}/yearData.json`);
+    const teams = data.teams;
+
+    const teamsData = getTeamData(year, teams);
+
+    const EPAs = [];
+    const autonEPAs = [];
+
+    for (let team of teamsData) {
+        if (team.totalEPA != 14.68) {
+            EPAs.push({ teamNumber: team.teamNumber, totalEPA: team.totalEPA });
+            autonEPAs.push({ teamNumber: team.teamNumber, autonEPA: team.autonEPA });
+        }
+    }
+    EPAs.sort((a, b) => b.totalEPA - a.totalEPA);
+    autonEPAs.sort((a, b) => b.autonEPA - a.autonEPA);
+
+    const indexInEPAs = EPAs.findIndex((team) => team.teamNumber === 10735);
+    const indexInAutonEPAs = autonEPAs.findIndex((team) => team.teamNumber === 10735);
+
+    console.log(
+        `Team 10735 is ranked #${indexInEPAs + 1} by totalEPA and are in the ${(
+            indexInEPAs / EPAs.length
+        ).toFixed(5)} percentile`
+    );
+    console.log(
+        `Team 10735 is ranked #${indexInAutonEPAs + 1} by autonEPA and are in the ${(
+            indexInAutonEPAs / EPAs.length
+        ).toFixed(5)} percentile`
+    );
+    console.log("Total Teams Competing", EPAs.length);
+
+    let rangeCount = [];
+    for (let matchScore of EPAs) {
+        // let index = Math.floor(matchScore.totalEPA/2);
+        // if (!rangeCount[index]) {
+        //     rangeCount[index] = 1;
+        // } else {
+        //     rangeCount[index]++;
+        // }
+        rangeCount.push(matchScore.totalEPA);
+    }
+    let elos = epaToEloScores(rangeCount);
+    rangeCount.map((val, index) => console.log(val + "\t" + elos[index]));
+    const output = rangeCount.map((val, index) => `${val}\t${elos[index]}`).join("\n");
+
+    fs.writeFileSync("output.txt", output);
+}
+
+function epaToEloScores(data) {
+    if (!Array.isArray(data) || data.length === 0) return [];
+
+    const n = data.length;
+
+    // Compute mean and std
+    const mean = data.reduce((a, b) => a + b, 0) / n;
+    const variance = data.reduce((sum, val) => sum + (val - mean) ** 2, 0) / n;
+    const std = Math.sqrt(variance);
+
+    // Estimate skewness
+    const skew = data.reduce((sum, val) => sum + ((val - mean) / std) ** 3, 0) / n;
+
+    // Estimate lambda from skewness: skew ≈ 2 / (λ * σ)
+    const lambda = skew !== 0 ? 2 / (skew * std) : 1 / std;
+
+    // Convert to ELO-like score
+    const eloScores = data.map((x) => {
+        const z = (x - mean) / std;
+        const skewCorrection = Math.sign(z) * Math.abs(z) ** (1 / (1 + lambda * std));
+        return 1500 + skewCorrection * 200;
+    });
+
+    return eloScores;
+}
 
 async function createEventData(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -58,12 +156,11 @@ async function createEventData(year) {
             updateEPA(year, eventCode, qualMatches.matchScores, qualSchedule.schedule);
         }
         writeJson(`${year}/events/${eventCode}/${eventCode}.json`, eventData);
-        break;
     }
 }
 
 function updateEPA(year, eventCode, matches, schedule) {
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < matches.length; i++) {
         let match = matches[i];
         let matchTeams = schedule[i].teams;
         let matchName = schedule[i].description;
@@ -73,7 +170,7 @@ function updateEPA(year, eventCode, matches, schedule) {
         const blueTeams = colorData.blueTeams;
         const surrogates = colorData.surrogates;
 
-        const pointBreakdown = getPointBreakdown(match.alliances);
+        const pointBreakdown = getPointBreakdown(year, match.alliances);
         const redData = pointBreakdown.redData;
         const blueData = pointBreakdown.blueData;
 
@@ -109,38 +206,56 @@ function updateEPA(year, eventCode, matches, schedule) {
             matchData["actualWinner"] = "Tie";
         }
         matchData["pointBreakdown"] = pointBreakdown;
-        matchData["predictedScores"] = {redEPA, redAutonEPA, redTeleOpEPA, blueEPA, blueAutonEPA, blueTeleOpEPA}
+        matchData["predictedScores"] = {
+            redEPA,
+            redAutonEPA,
+            redTeleOpEPA,
+            blueEPA,
+            blueAutonEPA,
+            blueTeleOpEPA,
+        };
+
+        let redErrorEPA = redData.redPenaltyFreeScore - redEPA;
+        let blueErrorEPA = blueData.bluePenaltyFreeScore - blueEPA;
+
+        let redAutonErrorEPA = redData.redAuto - redAutonEPA;
+        let blueAutonErrorEPA = blueData.blueAuto - blueAutonEPA;
+
+        redTeamsData.forEach((obj) => (obj.totalEPA += redErrorEPA / (redTeamsData.length * 3)));
+        blueTeamsData.forEach((obj) => (obj.totalEPA += blueErrorEPA / (blueTeamsData.length * 3)));
+
+        redTeamsData.forEach(
+            (obj) => (obj.autonEPA += redAutonErrorEPA / (redTeamsData.length * 3))
+        );
+        blueTeamsData.forEach(
+            (obj) => (obj.autonEPA += blueAutonErrorEPA / (blueTeamsData.length * 3))
+        );
+
+        redTeamsData.forEach((obj) => (obj.teleOpEPA = obj.totalEPA - obj.autonEPA));
+        blueTeamsData.forEach((obj) => (obj.teleOpEPA = obj.totalEPA - obj.autonEPA));
+
         if (!fs.existsSync(`${year}/events/${eventCode}/matches/${matchName}.json`)) {
             writeJson(`${year}/events/${eventCode}/matches/${matchName}.json`, matchData);
+            redTeamsData.forEach((obj) => obj.totalEPAOverTime.push(obj.totalEPA));
+            blueTeamsData.forEach((obj) => obj.totalEPAOverTime.push(obj.totalEPA));
+
+            redTeamsData.forEach((obj) => obj.teleOpEPAOverTime.push(obj.teleOpEPA));
+            blueTeamsData.forEach((obj) => obj.teleOpEPAOverTime.push(obj.teleOpEPA));
+
+            redTeamsData.forEach((obj) => obj.autonEPAOverTime.push(obj.autonEPA));
+            blueTeamsData.forEach((obj) => obj.autonEPAOverTime.push(obj.autonEPA));
             i = 0;
         }
 
-        let redErrorEPA = redData.redScore - redEPA;
-        let blueErrorEPA = blueData.blueScore - blueEPA;
-
-        let redAutonErrorEPA = redData.redAuto - redAutonEPA;
-        let blueAutonErrorEPA = blueData.blueAuto - blueAutonEPA;     
-        
-        redTeamsData.forEach((obj) => obj.totalEPA += redErrorEPA / (redTeamsData.length * 3))
-        blueTeamsData.forEach((obj) => obj.totalEPA += blueErrorEPA / (blueTeamsData.length * 3))
-
-        redTeamsData.forEach((obj) => obj.autonEPA += redAutonErrorEPA / (redTeamsData.length * 3))
-        blueTeamsData.forEach((obj) => obj.autonEPA += blueAutonErrorEPA / (blueTeamsData.length * 3))
-
-        redTeamsData.forEach((obj) => obj.teleOpEPA = obj.totalEPA - obj.autonEPA)
-        blueTeamsData.forEach((obj) => obj.teleOpEPA = obj.totalEPA - obj.autonEPA)
-
-        setTeamData(year, redTeamsData)
-        setTeamData(year, blueTeamsData)
-
+        setTeamData(year, redTeamsData);
+        setTeamData(year, blueTeamsData);
 
         // FIXME add wins ties losses using surrogates
-
     }
 }
 function setTeamData(year, teamsData) {
     for (let team of teamsData) {
-        writeJson(`${year}/teams/${team.teamNumber}.json`);
+        writeJson(`${year}/teams/${team.teamNumber}.json`, team);
     }
 }
 function getTeamData(year, teamNumbers) {
@@ -151,7 +266,25 @@ function getTeamData(year, teamNumbers) {
     }
     return teamsData;
 }
-function getPointBreakdown(alliances) {
+function getPenaltyPoints(year, alliance) {
+    switch (year) {
+        case 2019:
+            return alliance.penaltyPoints;
+        case 2024:
+            return alliance.foulPointsCommitted;
+    }
+}
+
+function getAutonPoints(year, alliance) {
+    switch (year) {
+        case 2019:
+            return alliance.autonomousPoints;
+        case 2024:
+            return alliance.autoPoints;
+    }
+}
+
+function getPointBreakdown(year, alliances) {
     var redScore, redPenaltyFreeScore, redAuto, redTeleOp;
 
     var blueScore, bluePenaltyFreeScore, blueAuto, blueTeleOp;
@@ -160,13 +293,13 @@ function getPointBreakdown(alliances) {
         let allianceColor = alliance.alliance;
         if (allianceColor == "Red") {
             redScore = alliance.totalPoints;
-            redPenaltyFreeScore = redScore - alliance.penaltyPoints;
-            redAuto = alliance.autonomousPoints;
+            redPenaltyFreeScore = redScore - getPenaltyPoints(year, alliance);
+            redAuto = getAutonPoints(year, alliance);
             redTeleOp = redPenaltyFreeScore - redAuto;
         } else if (allianceColor == "Blue") {
             blueScore = alliance.totalPoints;
-            bluePenaltyFreeScore = blueScore - alliance.penaltyPoints;
-            blueAuto = alliance.autonomousPoints;
+            bluePenaltyFreeScore = blueScore - getPenaltyPoints(year, alliance);
+            blueAuto = getAutonPoints(year, alliance);
             blueTeleOp = bluePenaltyFreeScore - blueAuto;
         } else {
             throw new Error("Team is neither blue or red there is an error");
@@ -336,6 +469,21 @@ async function generateListOfTeams(year) {
     var teams = [];
     for (let page = 1; page <= numberOfPages; page++) {
         const data = await callApiRequest(`${apiUrl}${year}/teams?state=MI&page=${page}`);
+        for (let team of data.teams) {
+            teams.push(team.teamNumber);
+        }
+        console.log(`Page ${page}`);
+    }
+    return teams;
+}
+
+async function generateListOfTeamsAtEvent(year, eventCode) {
+    const numberOfPages = (await callApiRequest(`${apiUrl}${year}/teams?eventCode=${eventCode}`))
+        .pageTotal;
+
+    var teams = [];
+    for (let page = 1; page <= numberOfPages; page++) {
+        const data = await callApiRequest(`${apiUrl}${year}/teams?eventCode=${eventCode}`);
         for (let team of data.teams) {
             teams.push(team.teamNumber);
         }
