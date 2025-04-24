@@ -21,26 +21,6 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await createEventData(2019);
 // await createStateRanks(2019);
 
-async function getTeamEPARank(year, eventCode) {
-    const eventData = readJson(`${year}/events/${eventCode}/${eventCode}.json`);
-    const teams = eventData.teams;
-    console.log(teams);
-    const teamsData = getTeamData(year, teams);
-
-    const EPAs = [];
-
-    for (let team of teamsData) {
-        EPAs.push({ teamNumber: team.teamNumber, totalEPA: team.totalEPA });
-    }
-    EPAs.sort((a, b) => b.totalEPA - a.totalEPA);
-
-    const output = EPAs.map(
-        (obj, index) => `${index + 1}\t${obj.teamNumber}\t${obj.totalEPA}`
-    ).join("\n");
-
-    fs.writeFileSync("teams_ranks.txt", output);
-}
-
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
     const teams = data.teams;
@@ -74,48 +54,36 @@ async function createStateRanks(year) {
     );
     console.log("Total Teams Competing", EPAs.length);
 
-    let rangeCount = [];
-    for (let matchScore of EPAs) {
-        // let index = Math.floor(matchScore.totalEPA/2);
-        // if (!rangeCount[index]) {
-        //     rangeCount[index] = 1;
-        // } else {
-        //     rangeCount[index]++;
-        // }
-        rangeCount.push(matchScore.totalEPA);
-    }
-    let elos = epaToEloScores(rangeCount);
-    rangeCount.map((val, index) => console.log(val + "\t" + elos[index]));
-    const output = rangeCount.map((val, index) => `${val}\t${elos[index]}`).join("\n");
+    // let rangeCount = [];
+    // for (let matchScore of EPAs) {
+    //     // let index = Math.floor(matchScore.totalEPA/2);
+    //     // if (!rangeCount[index]) {
+    //     //     rangeCount[index] = 1;
+    //     // } else {
+    //     //     rangeCount[index]++;
+    //     // }
+    //     rangeCount.push(matchScore.totalEPA);
+    // }
+    // let elos = epaToEloScores(rangeCount);
+    // rangeCount.map((val, index) => console.log(val + "\t" + elos[index]));
+    // const output = rangeCount.map((val, index) => `${val}\t${elos[index]}`).join("\n");
 
-    fs.writeFileSync("output.txt", output);
+    // fs.writeFileSync("output.txt", output);
 }
 
 function epaToEloScores(data) {
     if (!Array.isArray(data) || data.length === 0) return [];
 
-    const n = data.length;
+    const logData = data.map(x => Math.log(x));
+    const mean = logData.reduce((a, b) => a + b, 0) / logData.length;
+    const std = Math.sqrt(logData.reduce((sum, x) => sum + (x - mean) ** 2, 0) / logData.length);
 
-    // Compute mean and std
-    const mean = data.reduce((a, b) => a + b, 0) / n;
-    const variance = data.reduce((sum, val) => sum + (val - mean) ** 2, 0) / n;
-    const std = Math.sqrt(variance);
-
-    // Estimate skewness
-    const skew = data.reduce((sum, val) => sum + ((val - mean) / std) ** 3, 0) / n;
-
-    // Estimate lambda from skewness: skew ≈ 2 / (λ * σ)
-    const lambda = skew !== 0 ? 2 / (skew * std) : 1 / std;
-
-    // Convert to ELO-like score
-    const eloScores = data.map((x) => {
-        const z = (x - mean) / std;
-        const skewCorrection = Math.sign(z) * Math.abs(z) ** (1 / (1 + lambda * std));
-        return 1500 + skewCorrection * 200;
-    });
-
+    const eloScores = logData.map(x => 1500 + ((x - mean) / std) * 200);
+    console.log("Mean", mean)
+    console.log("STD", std)
     return eloScores;
 }
+
 
 async function createEventData(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -348,15 +316,19 @@ function getTeamNumbers(teamsData) {
 async function createTeamData(year) {
     const data = readJson(`${year}/yearData.json`);
     const teamList = data.teams;
+    const teamNameList = await generateListOfTeamsNames(year);
     const week1Average = data.gameInfo.week1Average;
     const week1STD = data.gameInfo.week1STD;
 
     const week1AverageAuto = data.gameInfo.week1AverageAuto;
     const week1STDAuto = data.gameInfo.week1STDAuto;
-    for (let teamNumber of teamList) {
+    for (let i = 0; i < teamList.length; i++) {
+        const teamNumber = teamList[i];
+        const teamName = teamNameList[i];
         var teamStartingData = {};
 
         teamStartingData["teamNumber"] = teamNumber;
+        teamStartingData["teamName"] = teamName;
 
         teamStartingData["wins"] = 0;
         teamStartingData["loss"] = 0;
@@ -388,6 +360,7 @@ async function createTeamData(year) {
             );
         }
 
+        teamStartingData["name"]
         teamStartingData["teleOpEPA"] = teamStartingData["totalEPA"] - teamStartingData["autonEPA"];
 
         teamStartingData["totalEPAOverTime"] = [teamStartingData["totalEPA"]];
@@ -443,6 +416,7 @@ async function generateYearData(year) {
         week1AverageAuto: null,
         week1STDAuto: null,
         EPA_STD: null,
+        competedTeams: 0
     };
     writeJson(`${year}/yearData.json`, yearData);
 }
@@ -475,6 +449,20 @@ async function generateListOfTeams(year) {
         console.log(`Page ${page}`);
     }
     return teams;
+}
+
+async function generateListOfTeamsNames(year) {
+    const numberOfPages = (await callApiRequest(`${apiUrl}${year}/teams?state=MI`)).pageTotal;
+
+    var names = [];
+    for (let page = 1; page <= numberOfPages; page++) {
+        const data = await callApiRequest(`${apiUrl}${year}/teams?state=MI&page=${page}`);
+        for (let team of data.teams) {
+            names.push(team.nameShort);
+        }
+        console.log(`Page ${page}`);
+    }
+    return names;
 }
 
 async function generateListOfTeamsAtEvent(year, eventCode) {

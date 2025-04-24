@@ -31,6 +31,16 @@ function safeJsonRead(path, res, exceptionError) {
         res.status(500).json({ error: exceptionError});
     }
 }
+for (let year of years) {
+    app.get(`/api/${year}/Total_Teams_Count`, (req, res) => {
+        try {
+            const data = readJson(`./${year}/yearData.json`);
+            res.json(data.gameInfo.competedTeams);
+        } catch (error) {
+            res.status(500).json({ error: "Could not get that years team count"});
+        }
+    });
+}
 app.get("/api/Team_List", (req, res) => {
     safeJsonRead(teamListInfoPath, res, "Error reading Team List");
 });
