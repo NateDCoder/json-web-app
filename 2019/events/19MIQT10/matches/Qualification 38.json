@@ -8,27 +8,31 @@
     13028,
     14843
   ],
-  "actualWinner": "Tie",
+  "actualWinner": "Red",
   "pointBreakdown": {
     "redData": {
       "redScore": 37,
       "redPenaltyFreeScore": 37,
       "redAuto": 5,
-      "redTeleOp": 32
+      "redTeleOp": 17,
+      "redEndgame": 15
     },
     "blueData": {
       "blueScore": 5,
       "bluePenaltyFreeScore": 5,
       "blueAuto": 0,
-      "blueTeleOp": 5
+      "blueTeleOp": 5,
+      "blueEndgame": 0
     }
   },
   "predictedScores": {
-    "redEPA": 31.11899344668584,
-    "redAutonEPA": 13.695696622081337,
-    "redTeleOpEPA": 17.423296824604506,
-    "blueEPA": 12.48172628827459,
-    "blueAutonEPA": -2.466455783640278,
-    "blueTeleOpEPA": 14.948182071914868
+    "redEPA": 31.76147592500397,
+    "redAutonEPA": 13.906506084022713,
+    "redTeleOpEPA": 4.621616234478132,
+    "redEndgameEPA": 13.233353606503126,
+    "blueEPA": 6.484639754396942,
+    "blueAutonEPA": -2.473609490260467,
+    "blueTeleOpEPA": 6.517106575609003,
+    "blueEndgameEPA": 2.441142669048406
   }
 }

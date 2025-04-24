@@ -1,9 +1,9 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const cors = require("cors");
-const { pathToFileURL } = require("url");
-
+import express from "express";
+import bodyParser from "body-parser";
+import fs from "fs";
+import cors from "cors";
+import { pathToFileURL } from "url";
+import { getTeamData } from "./redoing.js"
 const app = express();
 app.use(cors());
 const PORT = process.env.PORT || 3000;
@@ -35,12 +35,27 @@ for (let year of years) {
     app.get(`/api/${year}/Total_Teams_Count`, (req, res) => {
         try {
             const data = readJson(`./${year}/yearData.json`);
-            res.json(data.gameInfo.competedTeams);
+            res.json(data.competedTeams.length);
         } catch (error) {
             res.status(500).json({ error: "Could not get that years team count"});
         }
     });
+    app.get(`/api/${year}/Team_List`, (req, res) => {
+        try {
+            const data = readJson(`./${year}/yearData.json`);
+            const teams = data.competedTeams;
+            const teamData = getTeamData(year, teams);
+            res.json(teamData);
+        } catch (error) {
+            console.log
+            res.status(500).json({ error: "Could not get team list"});
+        }
+    });
 }
+app.get("/api/Team_List", (req, res) => {
+    safeJsonRead(teamListInfoPath, res, "Error reading Team List");
+});
+
 app.get("/api/Team_List", (req, res) => {
     safeJsonRead(teamListInfoPath, res, "Error reading Team List");
 });
@@ -566,34 +581,34 @@ async function getRanks(event_code, token) {
         });
     return ranks;
 }
-function getTeamData(allTeamData, teamNumbers, ranks) {
-    // console.log(allTeamData)
-    let teamDataArray = [];
-    var numberToRank = {};
-    var numberToData = {};
-    if (ranks.length > 0) {
-        ranks.forEach((item) => {
-            numberToRank[item.teamNumber] = item.rank;
-        });
-    }
-    allTeamData.forEach((item) => {
-        numberToData[item.Number] = item;
-    });
-    for (let teamNumber of teamNumbers) {
-        if (!numberToData[teamNumber]) {
-            console.log(teamNumber);
-        }
-        var teamData1 = { ...numberToData[teamNumber] };
-        if (ranks.length > 0) {
-            teamData1["Rank"] = numberToRank[teamNumber];
-        }
-        teamDataArray.push(teamData1);
-    }
+// function getTeamData(allTeamData, teamNumbers, ranks) {
+//     // console.log(allTeamData)
+//     let teamDataArray = [];
+//     var numberToRank = {};
+//     var numberToData = {};
+//     if (ranks.length > 0) {
+//         ranks.forEach((item) => {
+//             numberToRank[item.teamNumber] = item.rank;
+//         });
+//     }
+//     allTeamData.forEach((item) => {
+//         numberToData[item.Number] = item;
+//     });
+//     for (let teamNumber of teamNumbers) {
+//         if (!numberToData[teamNumber]) {
+//             console.log(teamNumber);
+//         }
+//         var teamData1 = { ...numberToData[teamNumber] };
+//         if (ranks.length > 0) {
+//             teamData1["Rank"] = numberToRank[teamNumber];
+//         }
+//         teamDataArray.push(teamData1);
+//     }
 
-    teamDataArray.sort((a, b) => b["EPA"] - a["EPA"]);
+//     teamDataArray.sort((a, b) => b["EPA"] - a["EPA"]);
 
-    if (ranks.length > 0) {
-        teamDataArray.sort((a, b) => a["Rank"] - b["Rank"]);
-    }
-    return teamDataArray;
-}
+//     if (ranks.length > 0) {
+//         teamDataArray.sort((a, b) => a["Rank"] - b["Rank"]);
+//     }
+//     return teamDataArray;
+// }

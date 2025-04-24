@@ -14,21 +14,25 @@
       "redScore": 25,
       "redPenaltyFreeScore": 25,
       "redAuto": 5,
-      "redTeleOp": 20
+      "redTeleOp": 5,
+      "redEndgame": 15
     },
     "blueData": {
       "blueScore": 39,
       "bluePenaltyFreeScore": 39,
       "blueAuto": 15,
-      "blueTeleOp": 24
+      "blueTeleOp": 9,
+      "blueEndgame": 15
     }
   },
   "predictedScores": {
-    "redEPA": 42.80441783926463,
-    "redAutonEPA": 15.329616663927137,
-    "redTeleOpEPA": 27.474801175337493,
-    "blueEPA": 19.740806506358787,
-    "blueAutonEPA": 10.292899247451068,
-    "blueTeleOpEPA": 9.447907258907719
+    "redEPA": 42.8087920074435,
+    "redAutonEPA": 13.364609670983503,
+    "redTeleOpEPA": 17.696667763872483,
+    "redEndgameEPA": 11.74751457258751,
+    "blueEPA": 22.20344819586009,
+    "blueAutonEPA": 9.80430740344432,
+    "blueTeleOpEPA": 6.721273696812915,
+    "blueEndgameEPA": 5.677867095602856
   }
 }

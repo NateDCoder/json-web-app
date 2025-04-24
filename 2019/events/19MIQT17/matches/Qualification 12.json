@@ -8,27 +8,31 @@
     15182,
     15568
   ],
-  "actualWinner": "Blue",
+  "actualWinner": "Red",
   "pointBreakdown": {
     "redData": {
       "redScore": 54,
       "redPenaltyFreeScore": 54,
       "redAuto": 20,
-      "redTeleOp": 34
+      "redTeleOp": 19,
+      "redEndgame": 15
     },
     "blueData": {
       "blueScore": 36,
       "bluePenaltyFreeScore": 36,
       "blueAuto": 15,
-      "blueTeleOp": 21
+      "blueTeleOp": 16,
+      "blueEndgame": 5
     }
   },
   "predictedScores": {
-    "redEPA": 31.203088495663856,
-    "redAutonEPA": 14.196188065300749,
-    "redTeleOpEPA": 17.006900430363107,
-    "blueEPA": 59.2559776696132,
-    "blueAutonEPA": 15.941757659407594,
-    "blueTeleOpEPA": 43.31422001020561
+    "redEPA": 43.51046577230042,
+    "redAutonEPA": 17.34616570990365,
+    "redTeleOpEPA": 9.94259489758797,
+    "redEndgameEPA": 16.2217051648088,
+    "blueEPA": 53.056010985502326,
+    "blueAutonEPA": 16.816178006773207,
+    "blueTeleOpEPA": 21.535359348106514,
+    "blueEndgameEPA": 14.704473630622605
   }
 }

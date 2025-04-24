@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { getStats, eloToEPA } from "./util.js";
+import { getStats, eloToEPA, epaToUnitlessEPA } from "./util.js";
 const token = btoa(`nathandgamer:B493F5FF-7FC9-43F8-9EB9-FE7E3042AC87`);
 
 const apiUrl = "https://ftc-api.firstinspires.org/v2.0/";
@@ -17,9 +17,9 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 
 // await generateYearData(2019)
 // await calculateAverageAndSTD(2019, ["19MIQT10", "19MIQT11", "19MIQT12", "19MIQT8", "19MIQT9"]);
-// await createTeamData(2019);
-// await createEventData(2019);
-// await createStateRanks(2019);
+await createTeamData(2019);
+await createEventData(2019);
+await createStateRanks(2019);
 
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -29,61 +29,61 @@ async function createStateRanks(year) {
 
     const EPAs = [];
     const autonEPAs = [];
+    const endgameEPAs = [];
+    const teleOpEPAs = [];
 
     for (let team of teamsData) {
-        if (team.totalEPA != 14.68) {
+        if (team.totalEPAOverTime.length > 1) {
             EPAs.push({ teamNumber: team.teamNumber, totalEPA: team.totalEPA });
             autonEPAs.push({ teamNumber: team.teamNumber, autonEPA: team.autonEPA });
+            endgameEPAs.push({ teamNumber: team.teamNumber, endgameEPA: team.endgameEPA });
+            teleOpEPAs.push({ teamNumber: team.teamNumber, teleOpEPA: team.teleOpEPA });
         }
     }
     EPAs.sort((a, b) => b.totalEPA - a.totalEPA);
     autonEPAs.sort((a, b) => b.autonEPA - a.autonEPA);
+    endgameEPAs.sort((a, b) => b.endgameEPA - a.endgameEPA);
+    teleOpEPAs.sort((a, b) => b.teleOpEPA - a.teleOpEPA);
 
-    const indexInEPAs = EPAs.findIndex((team) => team.teamNumber === 10735);
-    const indexInAutonEPAs = autonEPAs.findIndex((team) => team.teamNumber === 10735);
+    for (let i = 0; i < EPAs.length; i++) {
+        const teamData = readJson(`${year}/teams/${EPAs[i].teamNumber}.json`);
+        teamData["EPA Rank"] = i + 1;
+        setTeamData(year, [teamData]);
+    }
 
-    console.log(
-        `Team 10735 is ranked #${indexInEPAs + 1} by totalEPA and are in the ${(
-            indexInEPAs / EPAs.length
-        ).toFixed(5)} percentile`
-    );
-    console.log(
-        `Team 10735 is ranked #${indexInAutonEPAs + 1} by autonEPA and are in the ${(
-            indexInAutonEPAs / EPAs.length
-        ).toFixed(5)} percentile`
-    );
-    console.log("Total Teams Competing", EPAs.length);
+    for (let i = 0; i < autonEPAs.length; i++) {
+        const teamData = readJson(`${year}/teams/${autonEPAs[i].teamNumber}.json`);
+        teamData["Auto EPA Rank"] = i + 1;
+        setTeamData(year, [teamData]);
+    }
 
-    // let rangeCount = [];
-    // for (let matchScore of EPAs) {
-    //     // let index = Math.floor(matchScore.totalEPA/2);
-    //     // if (!rangeCount[index]) {
-    //     //     rangeCount[index] = 1;
-    //     // } else {
-    //     //     rangeCount[index]++;
-    //     // }
-    //     rangeCount.push(matchScore.totalEPA);
-    // }
-    // let elos = epaToEloScores(rangeCount);
-    // rangeCount.map((val, index) => console.log(val + "\t" + elos[index]));
-    // const output = rangeCount.map((val, index) => `${val}\t${elos[index]}`).join("\n");
+    for (let i = 0; i < teleOpEPAs.length; i++) {
+        const teamData = readJson(`${year}/teams/${teleOpEPAs[i].teamNumber}.json`);
+        teamData["TeleOp EPA Rank"] = i + 1;
+        setTeamData(year, [teamData]);
+    }
 
-    // fs.writeFileSync("output.txt", output);
+    for (let i = 0; i < endgameEPAs.length; i++) {
+        const teamData = readJson(`${year}/teams/${endgameEPAs[i].teamNumber}.json`);
+        teamData["Endgame EPA Rank"] = i + 1;
+        setTeamData(year, [teamData]);
+    }
+
+    // const indexInEPAs = EPAs.findIndex((team) => team.teamNumber === 10735);
+    // const indexInAutonEPAs = autonEPAs.findIndex((team) => team.teamNumber === 10735);
+
+    // console.log(
+    //     `Team 10735 is ranked #${indexInEPAs + 1} by totalEPA and are in the ${(
+    //         indexInEPAs / EPAs.length
+    //     ).toFixed(5)} percentile`
+    // );
+    // console.log(
+    //     `Team 10735 is ranked #${indexInAutonEPAs + 1} by autonEPA and are in the ${(
+    //         indexInAutonEPAs / EPAs.length
+    //     ).toFixed(5)} percentile`
+    // );
+    // console.log("Total Teams Competing", EPAs.length);
 }
-
-function epaToEloScores(data) {
-    if (!Array.isArray(data) || data.length === 0) return [];
-
-    const logData = data.map(x => Math.log(x));
-    const mean = logData.reduce((a, b) => a + b, 0) / logData.length;
-    const std = Math.sqrt(logData.reduce((sum, x) => sum + (x - mean) ** 2, 0) / logData.length);
-
-    const eloScores = logData.map(x => 1500 + ((x - mean) / std) * 200);
-    console.log("Mean", mean)
-    console.log("STD", std)
-    return eloScores;
-}
-
 
 async function createEventData(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -95,6 +95,14 @@ async function createEventData(year) {
             `${apiUrl}${year}/schedule/${eventCode}/qual/hybrid`
         );
         const qualMatches = await callApiRequest(`${apiUrl}${year}/scores/${eventCode}/qual/`);
+
+        const playoffSchedule = await callApiRequest(
+            `${apiUrl}${year}/schedule/${eventCode}/playoff/hybrid`
+        );
+
+        const playoffMatches = await callApiRequest(
+            `${apiUrl}${year}/scores/${eventCode}/playoff/`
+        );
 
         const rawEventData = await callApiRequest(`${apiUrl}${year}/events?eventCode=${eventCode}`);
         const eventDetails = rawEventData.events[0];
@@ -121,13 +129,29 @@ async function createEventData(year) {
             eventData["completed"] = true;
             eventData["ongoing"] = false;
             eventData["breakdown"] = null;
-            updateEPA(year, eventCode, qualMatches.matchScores, qualSchedule.schedule);
+            updateEPA(year, eventCode, qualMatches.matchScores, qualSchedule.schedule, teamNumbers);
+            updateEPA(
+                year,
+                eventCode,
+                playoffMatches.matchScores,
+                playoffSchedule.schedule,
+                teamNumbers,
+                0,
+                false
+            );
         }
         writeJson(`${year}/events/${eventCode}/${eventCode}.json`, eventData);
     }
 }
 
-function updateEPA(year, eventCode, matches, schedule) {
+function updateEPA(year, eventCode, matches, schedule, teamNumbers, epaMultiplier, iterate) {
+    if (epaMultiplier == null) {
+        epaMultiplier = 1 / 3;
+    }
+    if (iterate == null) {
+        iterate = true;
+    }
+    const yearData = readJson(`${year}/yearData.json`);
     for (let i = 0; i < matches.length; i++) {
         let match = matches[i];
         let matchTeams = schedule[i].teams;
@@ -151,8 +175,11 @@ function updateEPA(year, eventCode, matches, schedule) {
         const redAutonEPA = redTeamsData.reduce((sum, obj) => sum + (obj.autonEPA || 0), 0);
         const blueAutonEPA = blueTeamsData.reduce((sum, obj) => sum + (obj.autonEPA || 0), 0);
 
-        const redTeleOpEPA = redEPA - redAutonEPA;
-        const blueTeleOpEPA = blueEPA - blueAutonEPA;
+        const redEndgameEPA = redTeamsData.reduce((sum, obj) => sum + (obj.endgameEPA || 0), 0);
+        const blueEndgameEPA = blueTeamsData.reduce((sum, obj) => sum + (obj.endgameEPA || 0), 0);
+
+        const redTeleOpEPA = redEPA - redAutonEPA - redEndgameEPA;
+        const blueTeleOpEPA = blueEPA - blueAutonEPA - blueEndgameEPA;
 
         const matchData = {};
 
@@ -166,9 +193,9 @@ function updateEPA(year, eventCode, matches, schedule) {
         matchData["redTeams"] = redTeams;
         matchData["blueTeams"] = blueTeams;
 
-        if (redData.redAuto > blueData.blueScore) {
+        if (redData.redScore > blueData.blueScore) {
             matchData["actualWinner"] = "Red";
-        } else if (redData.redAuto < blueData.blueScore) {
+        } else if (redData.redScore < blueData.blueScore) {
             matchData["actualWinner"] = "Blue";
         } else {
             matchData["actualWinner"] = "Tie";
@@ -178,9 +205,11 @@ function updateEPA(year, eventCode, matches, schedule) {
             redEPA,
             redAutonEPA,
             redTeleOpEPA,
+            redEndgameEPA,
             blueEPA,
             blueAutonEPA,
             blueTeleOpEPA,
+            blueEndgameEPA,
         };
 
         let redErrorEPA = redData.redPenaltyFreeScore - redEPA;
@@ -189,20 +218,55 @@ function updateEPA(year, eventCode, matches, schedule) {
         let redAutonErrorEPA = redData.redAuto - redAutonEPA;
         let blueAutonErrorEPA = blueData.blueAuto - blueAutonEPA;
 
-        redTeamsData.forEach((obj) => (obj.totalEPA += redErrorEPA / (redTeamsData.length * 3)));
-        blueTeamsData.forEach((obj) => (obj.totalEPA += blueErrorEPA / (blueTeamsData.length * 3)));
+        let redEndGameErrorEPA = redData.redEndgame - redEndgameEPA;
+        let blueEndGameErrorEPA = blueData.blueEndgame - blueEndgameEPA;
 
         redTeamsData.forEach(
-            (obj) => (obj.autonEPA += redAutonErrorEPA / (redTeamsData.length * 3))
+            (obj) => (obj.totalEPA += (redErrorEPA / redTeamsData.length) * epaMultiplier)
         );
         blueTeamsData.forEach(
-            (obj) => (obj.autonEPA += blueAutonErrorEPA / (blueTeamsData.length * 3))
+            (obj) => (obj.totalEPA += (blueErrorEPA / blueTeamsData.length) * epaMultiplier)
+        );
+
+        redTeamsData.forEach(
+            (obj) => (obj.endgameEPA += (redEndGameErrorEPA / redTeamsData.length) * epaMultiplier)
+        );
+        blueTeamsData.forEach(
+            (obj) =>
+                (obj.endgameEPA += (blueEndGameErrorEPA / blueTeamsData.length) * epaMultiplier)
+        );
+
+        redTeamsData.forEach(
+            (obj) => (obj.autonEPA += (redAutonErrorEPA / redTeamsData.length) * epaMultiplier)
+        );
+        blueTeamsData.forEach(
+            (obj) => (obj.autonEPA += (blueAutonErrorEPA / blueTeamsData.length) * epaMultiplier)
         );
 
         redTeamsData.forEach((obj) => (obj.teleOpEPA = obj.totalEPA - obj.autonEPA));
         blueTeamsData.forEach((obj) => (obj.teleOpEPA = obj.totalEPA - obj.autonEPA));
 
-        if (!fs.existsSync(`${year}/events/${eventCode}/matches/${matchName}.json`)) {
+        redTeamsData.forEach(
+            (obj) =>
+                (obj.unitlessEPA = epaToUnitlessEPA(
+                    obj.totalEPA,
+                    yearData.gameInfo.averageEPA || yearData.gameInfo.week1Average,
+                    yearData.gameInfo.EPA_STD || yearData.week1STD
+                ))
+        );
+        blueTeamsData.forEach(
+            (obj) =>
+                (obj.unitlessEPA = epaToUnitlessEPA(
+                    obj.totalEPA,
+                    yearData.gameInfo.averageEPA || yearData.gameInfo.week1Average,
+                    yearData.gameInfo.EPA_STD || yearData.gameInfo.week1STD
+                ))
+        );
+
+        if (
+            !fs.existsSync(`${year}/events/${eventCode}/matches/${matchName}.json`) ||
+            readJson(`${year}/events/${eventCode}/matches/${matchName}.json`).actualWinner == null
+        ) {
             writeJson(`${year}/events/${eventCode}/matches/${matchName}.json`, matchData);
             redTeamsData.forEach((obj) => obj.totalEPAOverTime.push(obj.totalEPA));
             blueTeamsData.forEach((obj) => obj.totalEPAOverTime.push(obj.totalEPA));
@@ -212,27 +276,109 @@ function updateEPA(year, eventCode, matches, schedule) {
 
             redTeamsData.forEach((obj) => obj.autonEPAOverTime.push(obj.autonEPA));
             blueTeamsData.forEach((obj) => obj.autonEPAOverTime.push(obj.autonEPA));
-            i = 0;
-        }
 
+            redTeamsData.forEach((obj) => obj.endGameEPAOverTime.push(obj.endgameEPA));
+            blueTeamsData.forEach((obj) => obj.endGameEPAOverTime.push(obj.endgameEPA));
+
+            redTeamsData.forEach((obj) => obj.unitlessEPAOverTime.push(obj.unitlessEPA));
+            blueTeamsData.forEach((obj) => obj.unitlessEPAOverTime.push(obj.unitlessEPA));
+
+            if (matchData["actualWinner"] == "Red") {
+                redTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.wins++;
+                    } else {
+                        console.log(obj.teamNumber, "is a surgorate");
+                    }
+                });
+                blueTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.loss++;
+                    } else {
+                        console.log(obj.teamNumber, "is a surgorate");
+                    }
+                });
+            } else if (matchData["actualWinner"] == "Blue") {
+                blueTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.wins++;
+                    } else {
+                        console.log(obj.teamNumber, "is a surgorate");
+                    }
+                });
+                redTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.loss++;
+                    } else {
+                        console.log(obj.teamNumber, "is a surgorate");
+                    }
+                });
+            } else {
+                redTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.ties++;
+                    } else {
+                        console.log(obj.teamNumber, " is a surgorate");
+                    }
+                });
+                blueTeamsData.forEach((obj) => {
+                    if (!surrogates.includes(obj.teamNumber)) {
+                        obj.ties++;
+                    } else {
+                        console.log(obj.teamNumber, "is a surgorate");
+                    }
+                });
+            }
+            if (iterate) i = 0;
+        }
         setTeamData(year, redTeamsData);
         setTeamData(year, blueTeamsData);
-
-        // FIXME add wins ties losses using surrogates
     }
+    const allTeamsEventData = getTeamData(year, teamNumbers);
+    if (iterate) {
+        allTeamsEventData.forEach((obj) => obj.totalEPAOverTime.push(obj.totalEPA));
+        allTeamsEventData.forEach((obj) => obj.teleOpEPAOverTime.push(obj.teleOpEPA));
+        allTeamsEventData.forEach((obj) => obj.autonEPAOverTime.push(obj.autonEPA));
+        allTeamsEventData.forEach((obj) => obj.unitlessEPAOverTime.push(obj.unitlessEPA));
+        allTeamsEventData.forEach((obj) => obj.endGameEPAOverTime.push(obj.endgameEPA));
+    }
+
+    setTeamData(year, allTeamsEventData);
+
+    for (let teamData of allTeamsEventData) {
+        if (!yearData.competedTeams.includes(teamData.teamNumber)) {
+            yearData.competedTeams.push(teamData.teamNumber);
+        }
+    }
+
+    const competedTeamsEPA = getTeamEPA(year, yearData.competedTeams);
+    const newStats = getStats(competedTeamsEPA);
+    console.log(newStats);
+    yearData.gameInfo.averageEPA = newStats.average * 2;
+    yearData.gameInfo.EPA_STD = newStats.std * 2;
+
+    writeJson(`${year}/yearData.json`, yearData);
 }
 function setTeamData(year, teamsData) {
     for (let team of teamsData) {
         writeJson(`${year}/teams/${team.teamNumber}.json`, team);
     }
 }
-function getTeamData(year, teamNumbers) {
+export function getTeamData(year, teamNumbers) {
     let teamsData = [];
     for (let teamNumber of teamNumbers) {
         let teamData = readJson(`${year}/teams/${teamNumber}.json`);
         teamsData.push(teamData);
     }
     return teamsData;
+}
+function getTeamEPA(year, teamNumbers) {
+    let epas = [];
+    for (let teamNumber of teamNumbers) {
+        let teamData = readJson(`${year}/teams/${teamNumber}.json`);
+        epas.push(teamData.totalEPA);
+    }
+    return epas;
 }
 function getPenaltyPoints(year, alliance) {
     switch (year) {
@@ -252,10 +398,25 @@ function getAutonPoints(year, alliance) {
     }
 }
 
-function getPointBreakdown(year, alliances) {
-    var redScore, redPenaltyFreeScore, redAuto, redTeleOp;
+function getEndGamePoints(year, alliance) {
+    switch (year) {
+        case 2019:
+            return alliance.capstonePoints + alliance.foundationMoved
+                ? 15
+                : 0 + alliance.robot1Parked
+                ? 5
+                : 0 + alliance.robot2Parked
+                ? 5
+                : 0;
+        case 2024:
+            return alliance.autoPoints;
+    }
+}
 
-    var blueScore, bluePenaltyFreeScore, blueAuto, blueTeleOp;
+function getPointBreakdown(year, alliances) {
+    var redScore, redPenaltyFreeScore, redAuto, redTeleOp, redEndgame;
+
+    var blueScore, bluePenaltyFreeScore, blueAuto, blueTeleOp, blueEndgame;
 
     for (let alliance of alliances) {
         let allianceColor = alliance.alliance;
@@ -263,19 +424,21 @@ function getPointBreakdown(year, alliances) {
             redScore = alliance.totalPoints;
             redPenaltyFreeScore = redScore - getPenaltyPoints(year, alliance);
             redAuto = getAutonPoints(year, alliance);
-            redTeleOp = redPenaltyFreeScore - redAuto;
+            redEndgame = getEndGamePoints(year, alliance);
+            redTeleOp = redPenaltyFreeScore - redAuto - redEndgame;
         } else if (allianceColor == "Blue") {
             blueScore = alliance.totalPoints;
             bluePenaltyFreeScore = blueScore - getPenaltyPoints(year, alliance);
             blueAuto = getAutonPoints(year, alliance);
-            blueTeleOp = bluePenaltyFreeScore - blueAuto;
+            blueEndgame = getEndGamePoints(year, alliance);
+            blueTeleOp = bluePenaltyFreeScore - blueAuto - blueEndgame;
         } else {
             throw new Error("Team is neither blue or red there is an error");
         }
     }
     return {
-        redData: { redScore, redPenaltyFreeScore, redAuto, redTeleOp },
-        blueData: { blueScore, bluePenaltyFreeScore, blueAuto, blueTeleOp },
+        redData: { redScore, redPenaltyFreeScore, redAuto, redTeleOp, redEndgame },
+        blueData: { blueScore, bluePenaltyFreeScore, blueAuto, blueTeleOp, blueEndgame },
     };
 }
 function getColorData(matchTeams) {
@@ -293,10 +456,9 @@ function getColorData(matchTeams) {
         if (team.surrogate) {
             surrogates.push(teamNumber);
         }
-
-        if (station == "Red1" || station == "Red2") {
+        if (station == "Red1" || station == "Red2" || station == "Red3") {
             redTeams.push(teamNumber);
-        } else if (station == "Blue1" || station == "Blue2") {
+        } else if (station == "Blue1" || station == "Blue2" || station == "Blue3") {
             blueTeams.push(teamNumber);
         } else {
             throw new Error("Team is neither blue or red there is an error");
@@ -322,6 +484,10 @@ async function createTeamData(year) {
 
     const week1AverageAuto = data.gameInfo.week1AverageAuto;
     const week1STDAuto = data.gameInfo.week1STDAuto;
+
+    const week1AverageEndGame = data.gameInfo.week1AverageEndGame;
+    const week1STDEndGame = data.gameInfo.week1STDEndGame;
+
     for (let i = 0; i < teamList.length; i++) {
         const teamNumber = teamList[i];
         const teamName = teamNameList[i];
@@ -332,14 +498,13 @@ async function createTeamData(year) {
 
         teamStartingData["wins"] = 0;
         teamStartingData["loss"] = 0;
-        teamStartingData["draws"] = 0;
+        teamStartingData["ties"] = 0;
         if (fs.existsSync(`${year - 1}/teams/${teamNumber}.json`)) {
             var lastYearData = readJson(`${year - 1}/${teamNumber}.json`);
             teamStartingData["elo"] = lastYearData.elo;
         } else {
             teamStartingData["elo"] = 1500;
         }
-        teamStartingData["stateRank"] = null;
         if (week1Average == null) {
             teamStartingData["totalEPA"] = 0;
         } else {
@@ -360,12 +525,28 @@ async function createTeamData(year) {
             );
         }
 
-        teamStartingData["name"]
-        teamStartingData["teleOpEPA"] = teamStartingData["totalEPA"] - teamStartingData["autonEPA"];
+        if (week1AverageEndGame == null) {
+            teamStartingData["endgameEPA"] = 0;
+        } else {
+            teamStartingData["endgameEPA"] = eloToEPA(
+                teamStartingData["elo"],
+                week1AverageEndGame,
+                week1STDEndGame
+            );
+        }
+
+        teamStartingData["unitlessEPA"] = teamStartingData["elo"];
+        teamStartingData["teleOpEPA"] =
+            teamStartingData["totalEPA"] -
+            teamStartingData["autonEPA"] -
+            teamStartingData["endgameEPA"];
 
         teamStartingData["totalEPAOverTime"] = [teamStartingData["totalEPA"]];
         teamStartingData["teleOpEPAOverTime"] = [teamStartingData["teleOpEPA"]];
         teamStartingData["autonEPAOverTime"] = [teamStartingData["autonEPA"]];
+        teamStartingData["endGameEPAOverTime"] = [teamStartingData["endgameEPA"]];
+        teamStartingData["unitlessEPAOverTime"] = [teamStartingData["unitlessEPA"]];
+
         writeJson(`${year}/teams/${teamNumber}.json`, teamStartingData);
     }
 }
@@ -373,21 +554,24 @@ async function createTeamData(year) {
 async function calculateAverageAndSTD(year, eventCodes) {
     var matchScores = [];
     var autoScores = [];
+    var endGameScores = [];
     for (let eventCode of eventCodes) {
-        const matches = await callApiRequest(`${apiUrl}${year}/schedule/${eventCode}/qual/hybrid`);
+        const matches = await callApiRequest(`${apiUrl}${year}/scores/${eventCode}/qual/`);
         writeJson("exampe match.json", matches);
-        for (let match of matches.schedule) {
-            matchScores.push(match.scoreRedFinal - match.scoreRedFoul);
-            matchScores.push(match.scoreBlueFinal - match.scoreBlueFoul);
+        for (let match of matches.matchScores) {
+            for (let alliance of match.alliances) {
+                matchScores.push(alliance.totalPoints - getPenaltyPoints(year, alliance));
 
-            autoScores.push(match.scoreRedAuto);
-            autoScores.push(match.scoreBlueAuto);
+                autoScores.push(getAutonPoints(year, alliance));
+                endGameScores.push(getEndGamePoints(year, alliance));
+            }
         }
     }
     matchScores.sort((a, b) => a - b);
     var eventStats = getStats(matchScores);
     console.log("EventCode Stats", eventStats);
     console.log("Auto Stats", getStats(autoScores));
+    console.log("Endgame Stats", getStats(endGameScores));
     let rangeCount = [];
     for (let matchScore of matchScores) {
         let index = Math.floor(matchScore / (eventStats.std / 4));
@@ -409,14 +593,16 @@ async function generateYearData(year) {
     const events = await generateListOfEvents(year);
     yearData["teams"] = teams;
     yearData["events"] = events;
+    yearData["competedTeams"] = [];
     yearData["gameInfo"] = {
         week1Average: null,
         week1STD: null,
         averageEPA: null,
+        EPA_STD: null,
         week1AverageAuto: null,
         week1STDAuto: null,
-        EPA_STD: null,
-        competedTeams: 0
+        week1AverageEndGame: null,
+        week1STDEndGame: null,
     };
     writeJson(`${year}/yearData.json`, yearData);
 }
