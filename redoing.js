@@ -17,9 +17,9 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 
 // await generateYearData(2019)
 // await calculateAverageAndSTD(2019, ["19MIQT10", "19MIQT11", "19MIQT12", "19MIQT8", "19MIQT9"]);
-await createTeamData(2019);
-await createEventData(2019);
-await createStateRanks(2019);
+// await createTeamData(2019);
+// await createEventData(2019);
+// await createStateRanks(2019);
 
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
