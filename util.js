@@ -21,7 +21,7 @@ export function eloToEPA(elo, average, std) {
 
 export function epaToUnitlessEPA(epa, average, std) {
     if (!average || !std) {
-        console.error("Invalid Average or STD")
+        throw new Error("Invalid Average or STD")
     }
     if (std === 0) return 1500;
     return 1500 + ((epa - average) / std) * 200;

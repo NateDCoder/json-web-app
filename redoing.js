@@ -21,6 +21,24 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await createEventData(2019);
 // await createStateRanks(2019);
 
+// await generateYearData(2021)
+// await calculateAverageAndSTD(2021, ["USMICHM1", "USMICLM1", "USMICLS"]);
+// await createTeamData(2021);
+// await createEventData(2021);
+// await createStateRanks(2021);
+
+// await generateYearData(2022)
+// await calculateAverageAndSTD(2022, ["USMIDHS1", "USMIOCM1", "USMISCM1"]);
+// await createTeamData(2022);
+// await createEventData(2022);
+// await createStateRanks(2022);
+
+// await generateYearData(2023)
+// await calculateAverageAndSTD(2023, ["USMISCM1", "USMISCM2", "USMIDHS"]);
+// await createTeamData(2023);
+// await createEventData(2023);
+// await createStateRanks(2023);
+
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
     const teams = data.teams;
@@ -106,6 +124,8 @@ async function createEventData(year) {
 
         const rawEventData = await callApiRequest(`${apiUrl}${year}/events?eventCode=${eventCode}`);
         const eventDetails = rawEventData.events[0];
+
+        if (eventDetails.venue == "Remote Event") continue;
         const teamsData = await callApiRequest(`${apiUrl}${year}/teams?eventCode=${eventCode}`);
         const teamNumbers = getTeamNumbers(teamsData);
 
@@ -125,7 +145,7 @@ async function createEventData(year) {
             eventData["breakdown"] = null;
             continue;
         } else {
-            console.log("Completed Event");
+            console.log("Completed Event", eventCode);
             eventData["completed"] = true;
             eventData["ongoing"] = false;
             eventData["breakdown"] = null;
@@ -251,7 +271,7 @@ function updateEPA(year, eventCode, matches, schedule, teamNumbers, epaMultiplie
                 (obj.unitlessEPA = epaToUnitlessEPA(
                     obj.totalEPA,
                     yearData.gameInfo.averageEPA || yearData.gameInfo.week1Average,
-                    yearData.gameInfo.EPA_STD || yearData.week1STD
+                    yearData.gameInfo.EPA_STD || yearData.gameInfo.week1STD
                 ))
         );
         blueTeamsData.forEach(
@@ -367,23 +387,35 @@ function setTeamData(year, teamsData) {
 export function getTeamData(year, teamNumbers) {
     let teamsData = [];
     for (let teamNumber of teamNumbers) {
-        let teamData = readJson(`${year}/teams/${teamNumber}.json`);
-        teamsData.push(teamData);
+        try {
+            let teamData = readJson(`${year}/teams/${teamNumber}.json`);
+            teamsData.push(teamData);
+        } catch (error) {
+            console.error(error);
+        }
     }
     return teamsData;
 }
 function getTeamEPA(year, teamNumbers) {
     let epas = [];
     for (let teamNumber of teamNumbers) {
-        let teamData = readJson(`${year}/teams/${teamNumber}.json`);
-        epas.push(teamData.totalEPA);
+        try {
+            let teamData = readJson(`${year}/teams/${teamNumber}.json`);
+            epas.push(teamData.totalEPA);
+        } catch (error) {
+            console.error(error);
+        }
     }
     return epas;
 }
 function getPenaltyPoints(year, alliance) {
     switch (year) {
         case 2019:
+        case 2021:
             return alliance.penaltyPoints;
+        case 2022:
+        case 2023:
+            return alliance.penaltyPointsCommitted;
         case 2024:
             return alliance.foulPointsCommitted;
     }
@@ -393,6 +425,9 @@ function getAutonPoints(year, alliance) {
     switch (year) {
         case 2019:
             return alliance.autonomousPoints;
+        case 2021:
+        case 2022:
+        case 2023:
         case 2024:
             return alliance.autoPoints;
     }
@@ -408,8 +443,12 @@ function getEndGamePoints(year, alliance) {
                 : 0 + alliance.robot2Parked
                 ? 5
                 : 0;
+        case 2021:
+        case 2022:
+        case 2023:
+            return alliance.endgamePoints;
         case 2024:
-            return alliance.autoPoints;
+            return null;
     }
 }
 
@@ -433,6 +472,7 @@ function getPointBreakdown(year, alliances) {
             blueEndgame = getEndGamePoints(year, alliance);
             blueTeleOp = bluePenaltyFreeScore - blueAuto - blueEndgame;
         } else {
+            console.log(allianceColor, alliance);
             throw new Error("Team is neither blue or red there is an error");
         }
     }
@@ -461,6 +501,7 @@ function getColorData(matchTeams) {
         } else if (station == "Blue1" || station == "Blue2" || station == "Blue3") {
             blueTeams.push(teamNumber);
         } else {
+            console.log(station, team);
             throw new Error("Team is neither blue or red there is an error");
         }
     }
@@ -500,7 +541,7 @@ async function createTeamData(year) {
         teamStartingData["loss"] = 0;
         teamStartingData["ties"] = 0;
         if (fs.existsSync(`${year - 1}/teams/${teamNumber}.json`)) {
-            var lastYearData = readJson(`${year - 1}/${teamNumber}.json`);
+            var lastYearData = readJson(`${year - 1}/teams/${teamNumber}.json`);
             teamStartingData["elo"] = lastYearData.elo;
         } else {
             teamStartingData["elo"] = 1500;
@@ -560,6 +601,7 @@ async function calculateAverageAndSTD(year, eventCodes) {
         writeJson("exampe match.json", matches);
         for (let match of matches.matchScores) {
             for (let alliance of match.alliances) {
+                console.log(alliance);
                 matchScores.push(alliance.totalPoints - getPenaltyPoints(year, alliance));
 
                 autoScores.push(getAutonPoints(year, alliance));
