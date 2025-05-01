@@ -23,9 +23,9 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 
 // await generateYearData(2021)
 // await calculateAverageAndSTD(2021, ["USMICHM1", "USMICLM1", "USMICLS"]);
-// await createTeamData(2021);
-// await createEventData(2021);
-// await createStateRanks(2021);
+await createTeamData(2021);
+await createEventData(2021);
+await createStateRanks(2021);
 
 // await generateYearData(2022)
 // await calculateAverageAndSTD(2022, ["USMIDHS1", "USMIOCM1", "USMISCM1"]);
@@ -540,8 +540,9 @@ async function createTeamData(year) {
         teamStartingData["wins"] = 0;
         teamStartingData["loss"] = 0;
         teamStartingData["ties"] = 0;
-        if (fs.existsSync(`${year - 1}/teams/${teamNumber}.json`)) {
-            var lastYearData = readJson(`${year - 1}/teams/${teamNumber}.json`);
+        let lastYear = year == 2021 ? 2019 : year - 1;
+        if (fs.existsSync(`${lastYear}/teams/${teamNumber}.json`)) {
+            var lastYearData = readJson(`${lastYear}/teams/${teamNumber}.json`);
             teamStartingData["elo"] = lastYearData.elo;
         } else {
             teamStartingData["elo"] = 1500;

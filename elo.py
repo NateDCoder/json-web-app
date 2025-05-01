@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import exponnorm, norm
+import json
 # type: ignore
 
 from bisect import bisect_left
@@ -63,17 +64,37 @@ def get_epa_to_norm_epa_func(year_epas: List[float]) -> Callable[[float], float]
 
     return get_norm_epa
 
-# Your data
-with open('2024 elos.txt', 'r') as f:
-    data = np.array([float(line.strip()) for line in f if line.strip()])
+
+with open('2019/yearData.json', 'r') as file:
+    year_data = json.load(file)
+
+EPA_to_Number = []
+EPAs = []
+for year in year_data['competedTeams']:
+    print(f'2019/teams/{year}.json')
+    with open(f'2019/teams/{year}.json', 'r', encoding='utf-8') as file:
+        team_data = json.load(file)
+    EPAs.append(team_data['totalEPA'])
+    EPA_to_Number.append({"teamNumber":team_data['teamNumber'], "totalEPA":team_data['totalEPA']})
+print(EPA_to_Number)
+
+data = np.array(EPAs)
+data = np.sort(data)[::-1]
 
 # Fit the data using exponnorm
 # exponnorm takes K = lambda * sigma, loc = mu, scale = sigma
 K, loc, scale = exponnorm.fit(data)
 emg_elo_score = get_epa_to_norm_epa_func(data)
 
-for i in range(len(data)):
-    print(f"Original: {data[len(data)-1-i]:.2f} -> ELO: {emg_elo_score(data[len(data)-1-i]):.2f}")
+for teamStuff in EPA_to_Number:
+    teamNumber = teamStuff['teamNumber']
+    epa = teamStuff['totalEPA']
+    with open(f'2019/teams/{teamNumber}.json', 'r', encoding='utf-8') as file:
+        team_data = json.load(file)
+    team_data['elo'] = emg_elo_score(epa)
+    
+    with open(f'2019/teams/{teamNumber}.json', 'w', encoding='utf-8') as file:
+        json.dump(team_data, file, indent=4)
 print("STD:",  np.std(data))
 print("MEAN:",  np.mean(data))
 
