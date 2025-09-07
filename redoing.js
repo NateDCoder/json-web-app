@@ -23,9 +23,9 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 
 // await generateYearData(2021)
 // await calculateAverageAndSTD(2021, ["USMICHM1", "USMICLM1", "USMICLS"]);
-await createTeamData(2021);
-await createEventData(2021);
-await createStateRanks(2021);
+// await createTeamData(2021);
+// await createEventData(2021);
+// await createStateRanks(2021);
 
 // await generateYearData(2022)
 // await calculateAverageAndSTD(2022, ["USMIDHS1", "USMIOCM1", "USMISCM1"]);
@@ -38,6 +38,13 @@ await createStateRanks(2021);
 // await createTeamData(2023);
 // await createEventData(2023);
 // await createStateRanks(2023);
+
+// await generateYearData(2024)
+// await calculateAverageAndSTD(2024, ["USMISCM6", "USMIAVM1", "USMICPM1"]);
+await createTeamData(2024);
+await createEventData(2024);
+await createStateRanks(2024);
+
 
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
