@@ -45,6 +45,11 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await createEventData(2024);
 // await createStateRanks(2024);
 
+// await generateYearData(2025);
+await calculateAverageAndSTD(2025, ["USMIAVM1", "USMIMDM1", "USMIOCM1"]);
+await createTeamData(2025);
+await createEventData(2025);
+await createStateRanks(2025);
 
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -424,7 +429,9 @@ function getPenaltyPoints(year, alliance) {
         case 2023:
             return alliance.penaltyPointsCommitted;
         case 2024:
+        case 2025:
             return alliance.foulPointsCommitted;
+            
     }
 }
 
@@ -436,6 +443,7 @@ function getAutonPoints(year, alliance) {
         case 2022:
         case 2023:
         case 2024:
+        case 2025:
             return alliance.autoPoints;
     }
 }
@@ -456,6 +464,18 @@ function getEndGamePoints(year, alliance) {
             return alliance.endgamePoints;
         case 2024:
             return null;
+        case 2025:
+            return alliance.robot1Teleop == "FULL"
+                ? 10
+                : 0 + alliance.robot1Teleop == "FULL"
+                ? 10
+                : 0 + alliance.robot2Teleop == "FULL" && alliance.robot1Teleop == "FULL"
+                ? 10
+                : 0 + alliance.robot1Teleop == "PARTIAL"
+                ? 5
+                : 0 + alliance.robot2Teleop == "PARTIAL"
+                ? 5
+                : 0;
     }
 }
 
