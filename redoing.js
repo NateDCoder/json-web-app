@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { getStats, eloToEPA, epaToUnitlessEPA } from "./util.js";
+import { getStats, eloToEPA, epaToUnitlessEPA } from "./Scripts/util.js";
+import { create } from "domain";
 const token = btoa(`nathandgamer:B493F5FF-7FC9-43F8-9EB9-FE7E3042AC87`);
 
 const apiUrl = "https://ftc-api.firstinspires.org/v2.0/";
@@ -46,10 +47,10 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await createStateRanks(2024);
 
 // await generateYearData(2025);
-await calculateAverageAndSTD(2025, ["USMIAVM1", "USMIMDM1", "USMIOCM1"]);
-await createTeamData(2025);
-await createEventData(2025);
-await createStateRanks(2025);
+// await calculateAverageAndSTD(2025, ["USMIAVM1", "USMIMDM1", "USMIOCM1"]);
+// await createTeamData(2025);
+// await createEventData(2025);
+// await createStateRanks(2025);
 
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
@@ -116,7 +117,7 @@ async function createStateRanks(year) {
 }
 
 async function createEventData(year) {
-    const data = readJson(`${year}/yearData.json`);
+    var data = readJson(`${year}/yearData.json`);
     const events = data.events;
 
     for (let { code: eventCode } of events) {
@@ -161,7 +162,16 @@ async function createEventData(year) {
             eventData["completed"] = true;
             eventData["ongoing"] = false;
             eventData["breakdown"] = null;
-            updateEPA(year, eventCode, qualMatches.matchScores, qualSchedule.schedule, teamNumbers);
+            eventData["preEloTeamList"] = getTeamData(year, teamNumbers);
+            updateEPA(
+                year,
+                eventCode,
+                qualMatches.matchScores,
+                qualSchedule.schedule,
+                teamNumbers,
+                1 / 3,
+                false
+            );
             updateEPA(
                 year,
                 eventCode,
@@ -171,6 +181,10 @@ async function createEventData(year) {
                 0,
                 false
             );
+            await createStateRanks(year);
+            eventData["afterEloTeamList"] = getTeamData(year, teamNumbers);
+            data = readJson(`${year}/yearData.json`);
+            eventData["teamsCompeted"] = data.competedTeams.length
         }
         writeJson(`${year}/events/${eventCode}/${eventCode}.json`, eventData);
     }
@@ -213,8 +227,22 @@ function updateEPA(year, eventCode, matches, schedule, teamNumbers, epaMultiplie
         const redTeleOpEPA = redEPA - redAutonEPA - redEndgameEPA;
         const blueTeleOpEPA = blueEPA - blueAutonEPA - blueEndgameEPA;
 
-        const matchData = {};
+        const eloDifference =
+            epaToUnitlessEPA(
+                redEPA,
+                yearData.gameInfo.averageEPA || yearData.gameInfo.week1Average,
+                yearData.gameInfo.EPA_STD || yearData.gameInfo.week1STD
+            ) -
+            epaToUnitlessEPA(
+                blueEPA,
+                yearData.gameInfo.averageEPA || yearData.gameInfo.week1Average,
+                yearData.gameInfo.EPA_STD || yearData.gameInfo.week1STD
+            );
 
+        const winPercentage = 1 / (1 + Math.pow(10, -Math.abs(eloDifference) / 400));
+
+        const matchData = {};
+        matchData["winProbability"] = winPercentage;
         if (Math.round(redEPA) > Math.round(blueEPA)) {
             matchData["predictedWinner"] = "Red";
         } else if (Math.round(redEPA) < Math.round(blueEPA)) {
@@ -430,8 +458,7 @@ function getPenaltyPoints(year, alliance) {
             return alliance.penaltyPointsCommitted;
         case 2024:
         case 2025:
-            return alliance.foulPointsCommitted;
-            
+            return alliance.totalPoints - alliance.autoPoints - alliance.teleopPoints;
     }
 }
 
@@ -465,17 +492,13 @@ function getEndGamePoints(year, alliance) {
         case 2024:
             return null;
         case 2025:
-            return alliance.robot1Teleop == "FULL"
-                ? 10
-                : 0 + alliance.robot1Teleop == "FULL"
-                ? 10
-                : 0 + alliance.robot2Teleop == "FULL" && alliance.robot1Teleop == "FULL"
-                ? 10
-                : 0 + alliance.robot1Teleop == "PARTIAL"
-                ? 5
-                : 0 + alliance.robot2Teleop == "PARTIAL"
-                ? 5
-                : 0;
+            let endgamePoints =
+                (alliance.robot1Teleop == "FULL" ? 10 : 0) +
+                (alliance.robot2Teleop == "FULL" ? 10 : 0) +
+                (alliance.robot2Teleop == "FULL" && alliance.robot1Teleop == "FULL" ? 10 : 0) +
+                (alliance.robot1Teleop == "PARTIAL" ? 5 : 0) +
+                (alliance.robot2Teleop == "PARTIAL" ? 5 : 0);
+            return endgamePoints;
     }
 }
 
@@ -625,6 +648,7 @@ async function calculateAverageAndSTD(year, eventCodes) {
     var autoScores = [];
     var endGameScores = [];
     for (let eventCode of eventCodes) {
+        console.log(`${apiUrl}${year}/scores/${eventCode}/qual/`);
         const matches = await callApiRequest(`${apiUrl}${year}/scores/${eventCode}/qual/`);
         writeJson("exampe match.json", matches);
         for (let match of matches.matchScores) {
@@ -686,7 +710,7 @@ async function generateListOfEvents(year) {
                 (await callApiRequest(`${apiUrl}${year}/teams?eventCode=${event.code}`)).teams
                     .length == 0;
             if (noDataForEvent) continue;
-            events.push({ code: event.code, dateStart: event.dateStart });
+            events.push({ code: event.code, dateStart: event.dateStart, eventName: event.name });
         }
     }
     events.sort((a, b) => new Date(a.dateStart) - new Date(b.dateStart));

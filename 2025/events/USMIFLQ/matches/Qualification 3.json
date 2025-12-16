@@ -1,4 +1,5 @@
 {
+  "winProbability": 0.6700835254322454,
   "predictedWinner": "Blue",
   "redTeams": [
     25312,
@@ -12,27 +13,27 @@
   "pointBreakdown": {
     "redData": {
       "redScore": 70,
-      "redPenaltyFreeScore": 65,
+      "redPenaltyFreeScore": 55,
       "redAuto": 13,
-      "redTeleOp": 52,
-      "redEndgame": 0
+      "redTeleOp": 32,
+      "redEndgame": 10
     },
     "blueData": {
       "blueScore": 51,
-      "bluePenaltyFreeScore": 36,
+      "bluePenaltyFreeScore": 46,
       "blueAuto": 9,
       "blueTeleOp": 27,
-      "blueEndgame": 0
+      "blueEndgame": 10
     }
   },
   "predictedScores": {
-    "redEPA": 37.02991071649908,
-    "redAutonEPA": 13.54201859602893,
-    "redTeleOpEPA": 18.77993025609767,
-    "redEndgameEPA": 4.70796186437248,
-    "blueEPA": 63.014279362434166,
-    "blueAutonEPA": 9.616440266855012,
-    "blueTeleOpEPA": 49.576193379337106,
-    "blueEndgameEPA": 3.821645716242055
+    "redEPA": 44.895645492347285,
+    "redAutonEPA": 10.992007656059135,
+    "redTeleOpEPA": 21.688669886079072,
+    "redEndgameEPA": 12.214967950209076,
+    "blueEPA": 61.86778303604446,
+    "blueAutonEPA": 12.947535318160195,
+    "blueTeleOpEPA": 34.91406621041145,
+    "blueEndgameEPA": 14.006181507472816
   }
 }
