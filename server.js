@@ -6,7 +6,7 @@ import { pathToFileURL } from "url";
 import { getTeamData } from "./redoing.js"
 const app = express();
 app.use(cors());
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware to parse JSON and serve static files
 app.use(bodyParser.json());
@@ -116,9 +116,10 @@ app.get("/api/Event_Names", (req, res) => {
 //     });
 // }
 // Start server
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
+app.get('/', (req, res) => res.send('It works!'));
 
 function getK(gamesPlayed, matchLevel) {
     if (matchLevel == "PLAYOFF") return 0;
