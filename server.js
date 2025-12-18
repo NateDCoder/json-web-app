@@ -12,6 +12,15 @@ const PORT = process.env.PORT || 8080;
 app.use(bodyParser.json());
 app.use(express.static("public"));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  res.setHeader(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload"
+  );
+  next();
+});
+
 const years = [2025, 2024, 2023, 2022, 2021, 2019];
 const teamListInfoPath = "./data/All Team Data.json";
 const eventNamesPath = "./data/EventCode To Name.json";
