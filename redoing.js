@@ -52,6 +52,12 @@ const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf-8"));
 // await createEventData(2025);
 // await createStateRanks(2025);
 
+// await generateYearData(2026);
+// await calculateAverageAndSTD(2026, ["USMISAS", "USMIMDM1", "USMISCM4"]);
+// await createTeamData(2026);
+// await createEventData(2026);
+// await createStateRanks(2026);
+
 async function createStateRanks(year) {
     const data = readJson(`${year}/yearData.json`);
     const teams = data.teams;
@@ -459,6 +465,8 @@ function getPenaltyPoints(year, alliance) {
         case 2024:
         case 2025:
             return alliance.totalPoints - alliance.autoPoints - alliance.teleopPoints;
+        case 2026:
+            return alliance.totalPoints - alliance.preFoulTotal;
     }
 }
 
@@ -471,6 +479,7 @@ function getAutonPoints(year, alliance) {
         case 2023:
         case 2024:
         case 2025:
+        case 2026:
             return alliance.autoPoints;
     }
 }
@@ -499,6 +508,9 @@ function getEndGamePoints(year, alliance) {
                 (alliance.robot1Teleop == "PARTIAL" ? 5 : 0) +
                 (alliance.robot2Teleop == "PARTIAL" ? 5 : 0);
             return endgamePoints;
+        case 2026:
+            return alliance.teleopFlowerPoints;
+
     }
 }
 
@@ -593,7 +605,7 @@ async function createTeamData(year) {
         let lastYear = year == 2021 ? 2019 : year - 1;
         if (fs.existsSync(`${lastYear}/teams/${teamNumber}.json`)) {
             var lastYearData = readJson(`${lastYear}/teams/${teamNumber}.json`);
-            teamStartingData["elo"] = lastYearData.elo;
+            teamStartingData["elo"] = lastYearData.unitlessEPA;
         } else {
             teamStartingData["elo"] = 1500;
         }
